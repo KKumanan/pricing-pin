@@ -26,7 +26,8 @@ A modern, sleek web application for analyzing real estate CSV data with advanced
 
 ### 📋 **Data Visualization**
 - **Overview Tab**: Key market metrics and insights
-- **Data Table Tab**: Detailed property information with advanced filtering and Zillow links
+- **Data Table Tab**: Detailed property information with advanced filtering, clickable addresses, and sticky address column
+- **Data Entry Tab**: Interactive property selection with live Zillow iframe preview and form-based data entry
 - **Analysis Tab**: Market trends and property distribution analysis
 
 ### 💾 **Export Functionality**
@@ -34,6 +35,7 @@ A modern, sleek web application for analyzing real estate CSV data with advanced
 - Filtered data export
 - Custom filename support
 - Zillow URLs included in exports
+- Real-time data updates from Data Entry tab
 
 ## Quick Start
 
@@ -61,8 +63,9 @@ A modern, sleek web application for analyzing real estate CSV data with advanced
 1. **Upload Data**: Drag and drop your CSV file or click to browse
 2. **View Overview**: See key statistics and market insights
 3. **Explore Data**: Use the interactive table to sort, filter, and search
-4. **Analyze Trends**: Check the analysis tab for detailed market insights
-5. **Export Results**: Download processed data as CSV
+4. **Enter Data**: Use the Data Entry tab to select properties and fill in additional data
+5. **Analyze Trends**: Check the analysis tab for detailed market insights
+6. **Export Results**: Download processed data as CSV
 
 ## Data Format
 

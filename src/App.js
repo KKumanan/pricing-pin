@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import FileUpload from './components/FileUpload';
 import DataTable from './components/DataTable';
+import EditableDataTable from './components/EditableDataTable';
+import DataEntry from './components/DataEntry';
 import SummaryStats from './components/SummaryStats';
 import { processCSVData, calculateComparisons, generateSummaryStats, exportToCSV } from './utils/csvProcessor';
-import { BarChart3, FileSpreadsheet, TrendingUp } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, TrendingUp, Edit3 } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState([]);
@@ -41,9 +43,16 @@ function App() {
     exportToCSV(dataToExport, 'processed_real_estate_data.csv');
   };
 
+  const handleDataUpdate = (updatedData) => {
+    setProcessedData(updatedData);
+    const updatedStats = generateSummaryStats(updatedData);
+    setStats(updatedStats);
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'data', label: 'Data Table', icon: FileSpreadsheet },
+    { id: 'data-entry', label: 'Data Entry', icon: Edit3 },
     { id: 'analysis', label: 'Analysis', icon: TrendingUp },
   ];
 
@@ -151,11 +160,17 @@ function App() {
                     </button>
                   </div>
                   
-                  <DataTable data={processedData} onExport={handleExport} />
+                                                       <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
                 </div>
               )}
 
-                             {activeTab === 'analysis' && (
+              {activeTab === 'data-entry' && (
+                <div className="space-y-6">
+                  <DataEntry data={processedData} onDataUpdate={handleDataUpdate} />
+                </div>
+              )}
+
+              {activeTab === 'analysis' && (
                  <div className="space-y-6">
                    <div>
                      <h2 className="text-2xl font-bold text-gray-900 mb-2">

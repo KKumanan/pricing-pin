@@ -29,6 +29,15 @@ export const processCSVData = (csvText) => {
               ? ((parsePrice(row['Close Price']) - parsePrice(row['List Price'])) / parsePrice(row['List Price']) * 100).toFixed(2)
               : null,
             'Zillow Link': generateZillowLink(row['Address'], row['City']),
+            // Initialize editable fields
+            'Status Contractual': row['Status Contractual'] || '',
+            'Long Text': row['Long Text'] || '',
+            'Upgrades': row['Upgrades'] || '',
+            'Parking': row['Parking'] || '',
+            'BR up1': row['BR up1'] || '',
+            'FB up1': row['FB up1'] || '',
+            'Main Level BR': row['Main Level BR'] || '',
+            'Main Level Full Bath': row['Main Level Full Bath'] || '',
           }));
           resolve(processedData);
         }

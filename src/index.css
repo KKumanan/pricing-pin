@@ -26,11 +26,11 @@
   }
   
   .table-container {
-    @apply overflow-x-auto rounded-lg border border-gray-200;
+    @apply overflow-x-auto rounded-lg border border-gray-200 relative;
   }
   
   .table {
-    @apply min-w-full divide-y divide-gray-200;
+    @apply min-w-full divide-y divide-gray-200 relative;
   }
   
   .table-header {

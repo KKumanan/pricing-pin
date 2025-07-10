@@ -1,26 +1,42 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X } from 'lucide-react';
 
-const DataTable = ({ data, onExport }) => {
+const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [localData, setLocalData] = useState(data);
+  
   const [selectedColumns, setSelectedColumns] = useState([
     'Address', 'MLS #', 'Status', 'List Price', 'Close Price', 
     'Above Grade Finished SQFT', 'Price/SqFt', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
-    'Beds', 'Baths', 'Year Built'
+    'Beds', 'Baths', 'Year Built', 'Status Contractual', 'Long Text', 'Upgrades', 
+    'Parking', 'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath'
   ]);
+
+  // Editable fields configuration
+  const editableFields = [
+    'Status Contractual', 'Long Text', 'Upgrades', 'Parking', 
+    'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath'
+  ];
+
+  // Update local data when props change
+  React.useEffect(() => {
+    setLocalData(data);
+  }, [data]);
 
   // Get all available columns
   const allColumns = useMemo(() => {
-    if (data.length === 0) return [];
-    return Object.keys(data[0]);
-  }, [data]);
+    if (localData.length === 0) return [];
+    return Object.keys(localData[0]);
+  }, [localData]);
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
-    let filtered = data.filter(item =>
+    let filtered = localData.filter(item =>
       Object.values(item).some(value =>
         value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -50,7 +66,7 @@ const DataTable = ({ data, onExport }) => {
     }
 
     return filtered;
-  }, [data, searchTerm, sortConfig]);
+  }, [localData, searchTerm, sortConfig]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
@@ -66,8 +82,88 @@ const DataTable = ({ data, onExport }) => {
     }));
   };
 
-  const formatValue = (value, key) => {
+  const startEditing = (rowIndex, column, value) => {
+    if (!editableFields.includes(column)) return;
+    
+    setEditingCell({ rowIndex, column });
+    setEditValue(value || '');
+  };
+
+  const saveEdit = () => {
+    if (!editingCell) return;
+
+    const { rowIndex, column } = editingCell;
+    const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+    const updatedData = [...localData];
+    
+    // Find the actual row in the original data
+    const rowToUpdate = filteredAndSortedData[actualRowIndex];
+    const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+    
+    if (originalIndex !== -1) {
+      updatedData[originalIndex] = {
+        ...updatedData[originalIndex],
+        [column]: editValue
+      };
+      
+      setLocalData(updatedData);
+      if (onDataUpdate) {
+        onDataUpdate(updatedData);
+      }
+    }
+    
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      saveEdit();
+    } else if (e.key === 'Escape') {
+      cancelEdit();
+    }
+  };
+
+  const formatValue = (value, key, rowIndex) => {
     if (value === null || value === undefined) return '-';
+    
+    // Check if this cell is being edited
+    const isEditing = editingCell && editingCell.rowIndex === rowIndex && editingCell.column === key;
+    
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyPress}
+            onBlur={saveEdit}
+            className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+            autoFocus
+          />
+          <button
+            onClick={saveEdit}
+            className="p-1 text-green-600 hover:text-green-700"
+            title="Save"
+          >
+            <Save className="w-3 h-3" />
+          </button>
+          <button
+            onClick={cancelEdit}
+            className="p-1 text-red-600 hover:text-red-700"
+            title="Cancel"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      );
+    }
     
     // Make Address a hyperlink to Zillow
     if (key === 'Address' && typeof value === 'string') {
@@ -108,6 +204,21 @@ const DataTable = ({ data, onExport }) => {
       return `${value}%`;
     }
     
+    // For editable fields, make them clickable
+    if (editableFields.includes(key)) {
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${
+            value ? 'border-gray-200' : 'border-gray-300 border-dashed'
+          }`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {value || ''}
+        </div>
+      );
+    }
+    
     return value.toString();
   };
 
@@ -120,7 +231,7 @@ const DataTable = ({ data, onExport }) => {
       : <ChevronDown className="w-4 h-4 text-primary-600" />;
   };
 
-  if (data.length === 0) {
+  if (localData.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">No data to display</p>
@@ -157,12 +268,26 @@ const DataTable = ({ data, onExport }) => {
           </select>
           
           <button
-            onClick={() => onExport(filteredAndSortedData)}
+            onClick={() => onExport(localData)}
             className="btn-secondary flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
             Export
           </button>
+        </div>
+      </div>
+
+      {/* Editable Fields Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
+        <p className="text-sm text-blue-700 mb-2">
+          Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, BR up1, FB up1, Main Level BR, Main Level Full Bath</strong>
+        </p>
+        <div className="flex items-center gap-2 text-xs text-blue-600">
+          <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
+          <span>Empty editable field</span>
+          <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
+          <span>Field with data</span>
         </div>
       </div>
 
@@ -188,8 +313,8 @@ const DataTable = ({ data, onExport }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedData.map((row, index) => (
-              <tr key={index} className="table-row">
+            {paginatedData.map((row, rowIndex) => (
+              <tr key={rowIndex} className="table-row">
                 {selectedColumns.map(column => (
                   <td 
                     key={column} 
@@ -197,7 +322,7 @@ const DataTable = ({ data, onExport }) => {
                       column === 'Address' ? 'sticky left-0 bg-white z-10 shadow-sm' : ''
                     }`}
                   >
-                    {formatValue(row[column], column)}
+                    {formatValue(row[column], column, rowIndex)}
                   </td>
                 ))}
               </tr>
@@ -242,4 +367,4 @@ const DataTable = ({ data, onExport }) => {
   );
 };
 
-export default DataTable; 
+export default EditableDataTable; 
