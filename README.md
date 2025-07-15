@@ -1,166 +1,148 @@
-# Pricing Pin - Real Estate Data Analysis Web App
+# Pricing Pin - Real Estate Data Analysis
 
-A modern, sleek web application for analyzing real estate CSV data with advanced calculations, visualizations, and insights.
+A modern web application for analyzing real estate CSV data with advanced features including data visualization, market analysis, and session management.
 
 ## Features
 
-### 📊 **Data Processing**
-- Upload CSV files with drag-and-drop functionality
-- Automatic parsing and cleaning of real estate data
-- Smart handling of various data formats (prices, square footage, etc.)
+- **CSV Data Processing**: Upload and process real estate CSV files
+- **Interactive Data Tables**: View and edit data with sorting and filtering
+- **Market Analysis**: Comprehensive analytics and insights
+- **Data Export**: Export processed data to CSV format
+- **Session Management**: Save and load analysis sessions using SQLite database
+- **Real-time Statistics**: Dynamic calculation of market metrics
 
-### 📈 **Advanced Calculations**
-- **Automatic EXP Property Reference**: Uses the property with status "EXP" as the reference for all comparisons
-- Price difference analysis (Close vs List Price)
-- Square footage comparisons vs EXP property
-- Lot size analysis vs EXP property
-- Days on market statistics
-- Price per square foot calculations
+## Database Features
 
-### 🎨 **Modern UI/UX**
-- Clean, responsive design with Tailwind CSS
-- Interactive data tables with sorting and filtering
-- Real-time search functionality
-- Pagination for large datasets
-- Beautiful statistics cards with icons
+The application now includes SQLite database functionality to save and manage your CSV analysis sessions:
 
-### 📋 **Data Visualization**
-- **Overview Tab**: Key market metrics and insights
-- **Data Table Tab**: Detailed property information with advanced filtering, clickable addresses, and sticky address column
-- **Data Entry Tab**: Interactive property selection with live Zillow iframe preview and form-based data entry
-- **Analysis Tab**: Market trends and property distribution analysis
+- **Save Sessions**: Save your current analysis with a name and description
+- **Load Sessions**: Retrieve and load previously saved sessions
+- **Session History**: View all saved sessions with metadata
+- **Delete Sessions**: Remove unwanted sessions from the database
+- **Persistent Storage**: All sessions are stored locally in SQLite
 
-### 💾 **Export Functionality**
-- Export processed data to CSV
-- Filtered data export
-- Custom filename support
-- Zillow URLs included in exports
-- Real-time data updates from Data Entry tab
+## Installation
 
-## Quick Start
-
-### Prerequisites
-- Node.js (version 14 or higher)
-- npm or yarn
-
-### Installation
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Start the development server:**
-   ```bash
-   npm start
-   ```
-
-3. **Open your browser:**
-   Navigate to `http://localhost:3000`
-
-### Usage
-
-1. **Upload Data**: Drag and drop your CSV file or click to browse
-2. **View Overview**: See key statistics and market insights
-3. **Explore Data**: Use the interactive table to sort, filter, and search
-4. **Enter Data**: Use the Data Entry tab to select properties and fill in additional data
-5. **Analyze Trends**: Check the analysis tab for detailed market insights
-6. **Export Results**: Download processed data as CSV
-
-## Data Format
-
-The app is designed to work with real estate CSV data containing columns like:
-
-- `MLS #` - Property identifier
-- `Status` - Property status (ACT, CLS, PND, EXP)
-- `Address` - Property address
-- `List Price` - Original listing price
-- `Close Price` - Final sale price
-- `Above Grade Finished SQFT` - Square footage
-- `Price/SqFt` - Price per square foot
-- `Beds` - Number of bedrooms
-- `Baths` - Number of bathrooms
-- `Year Built` - Construction year
-- `DOM` - Days on market
-- `Subdivision/Neighborhood` - Location information
-- `Zillow Link` - Direct link to property on Zillow
-
-## Example Data
-
-The app includes example files:
-- `bright-input.csv` - Sample input data
-- `output.csv` - Sample processed output
-
-## Key Calculations
-
-### Price Analysis
-- **Price Difference**: Close Price - List Price
-- **Price Difference %**: (Close Price - List Price) / List Price × 100
-- **Average Price Trends**: Market-wide price analysis
-
-### Market Metrics
-- **Days on Market**: Average time properties stay listed
-- **Price per Square Foot**: Market rate analysis
-- **Property Distribution**: Breakdown by bedrooms, neighborhoods
-
-### Comparative Analysis
-- **Square Footage Difference vs EXP**: Compared to the expired listing
-- **Lot Size Difference vs EXP**: Lot size comparisons to the expired listing
-- **Price vs EXP**: Relative pricing analysis compared to the expired listing
-- **Automatic Reference Detection**: Automatically identifies and uses the EXP property as the baseline
-
-## Technology Stack
-
-- **Frontend**: React 18
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **CSV Processing**: PapaParse
-- **Build Tool**: Create React App
-
-## Project Structure
-
-```
-src/
-├── components/
-│   ├── FileUpload.js      # File upload with drag & drop
-│   ├── DataTable.js       # Interactive data table
-│   └── SummaryStats.js    # Statistics cards
-├── utils/
-│   └── csvProcessor.js    # CSV parsing and calculations
-├── App.js                 # Main application component
-├── index.js              # React entry point
-└── index.css             # Global styles
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd pricing-pin
 ```
 
-## Customization
+2. Install dependencies:
+```bash
+npm install
+```
 
-### Adding New Calculations
-Edit `src/utils/csvProcessor.js` to add new data processing functions.
+3. Start the development server:
+```bash
+npm run dev
+```
 
-### Modifying UI
-Update components in `src/components/` and styles in `src/index.css`.
+This will start both the React frontend (port 3000) and the Express backend server (port 3001) concurrently.
 
-### Adding New Data Fields
-Modify the CSV processing logic to handle additional columns.
+## Usage
 
-## Browser Support
+### Starting the Application
 
-- Chrome (recommended)
-- Firefox
-- Safari
-- Edge
+- **Development mode**: `npm run dev` (starts both frontend and backend)
+- **Frontend only**: `npm start` (requires backend to be running separately)
+- **Backend only**: `npm run server`
 
-## License
+### Using Session Management
 
-This project is open source and available under the MIT License.
+1. **Upload and Process Data**: Upload your CSV file and process the data
+2. **Save Session**: Click "Save Current Session" in the "Saved Sessions" tab
+3. **Name Your Session**: Provide a name and optional description
+4. **Load Sessions**: View and load previously saved sessions
+5. **Manage Sessions**: Delete unwanted sessions as needed
+
+### Database Location
+
+The SQLite database file is automatically created at:
+```
+server/database.sqlite
+```
+
+## API Endpoints
+
+The backend provides the following REST API endpoints:
+
+- `GET /api/sessions` - Get all saved sessions
+- `GET /api/sessions/:id` - Get a specific session by ID
+- `POST /api/sessions` - Save a new session
+- `PUT /api/sessions/:id` - Update an existing session
+- `DELETE /api/sessions/:id` - Delete a session
+- `GET /api/health` - Health check endpoint
+
+## Data Structure
+
+### CSV Session Schema
+
+```sql
+CREATE TABLE csv_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  data TEXT NOT NULL,
+  stats TEXT
+);
+```
+
+## Development
+
+### Project Structure
+
+```
+pricing-pin/
+├── src/
+│   ├── components/
+│   │   ├── SessionManager.js    # Session management component
+│   │   └── ...
+│   ├── utils/
+│   │   ├── apiService.js        # API communication service
+│   │   └── ...
+│   └── App.js                   # Main application component
+├── server/
+│   └── index.js                 # Express.js backend server
+├── database.sqlite              # SQLite database (auto-created)
+└── package.json
+```
+
+### Adding New Features
+
+1. **Frontend**: Add components in `src/components/`
+2. **Backend**: Add routes in `server/index.js`
+3. **API**: Update `src/utils/apiService.js` for new endpoints
+4. **Database**: Add new tables in the database initialization section
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Backend not starting**: Ensure port 3001 is available
+2. **Database errors**: Check file permissions for `server/database.sqlite`
+3. **CORS errors**: Verify the backend is running on the correct port
+4. **Session not saving**: Check browser console for API errors
+
+### Database Reset
+
+To reset the database (deletes all saved sessions):
+```bash
+rm server/database.sqlite
+npm run server
+```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Test thoroughly
+5. Submit a pull request
 
----
+## License
 
-**Built with ❤️ for real estate professionals** 
+This project is licensed under the MIT License. 
