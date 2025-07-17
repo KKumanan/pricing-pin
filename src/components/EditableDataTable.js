@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star } from 'lucide-react';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -9,23 +9,31 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [localData, setLocalData] = useState(data);
+  const [showEditableInfo, setShowEditableInfo] = useState(true);
   
   const [selectedColumns, setSelectedColumns] = useState([
     'Address', 'MLS #', 'Status', 'List Price', 'Close Price', 
     'Above Grade Finished SQFT', 'Price/SqFt', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
-    'Beds', 'Baths', 'Year Built', 'Status Contractual', 'Long Text', 'Upgrades', 
+    'Beds', 'Baths', 'Year Built', 'Rating', 'Good Comp', 'Worth Comparison', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath'
   ]);
 
   // Editable fields configuration
   const editableFields = [
     'Status Contractual', 'Long Text', 'Upgrades', 'Parking', 
-    'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath'
+    'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath', 'Rating', 'Good Comp', 'Worth Comparison'
   ];
 
   // Update local data when props change
   React.useEffect(() => {
-    setLocalData(data);
+    // Ensure every row has default values for Rating, Good Comp, and Worth Comparison
+    const dataWithDefaults = data.map(row => ({
+      ...row,
+      Rating: row.Rating === undefined || row.Rating === null ? 0 : row.Rating,
+      'Good Comp': row['Good Comp'] === undefined || row['Good Comp'] === null ? 'NO' : row['Good Comp'],
+      'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison']
+    }));
+    setLocalData(dataWithDefaults);
   }, [data]);
 
   // Get all available columns
@@ -129,6 +137,62 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     }
   };
 
+  const handleRatingChange = (rowIndex, newRating) => {
+    console.log('Rating change requested:', newRating, 'for row:', rowIndex);
+    const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+    const updatedData = [...localData];
+    
+    // Find the actual row in the original data
+    const rowToUpdate = filteredAndSortedData[actualRowIndex];
+    const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+    
+    if (originalIndex !== -1) {
+      updatedData[originalIndex] = {
+        ...updatedData[originalIndex],
+        Rating: newRating
+      };
+      
+      setLocalData(updatedData);
+      if (onDataUpdate) {
+        onDataUpdate(updatedData);
+      }
+      console.log('Rating updated successfully');
+    }
+  };
+
+  // Simple inline star rating component
+  const TableStarRating = ({ value, onChange, rowIndex }) => {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            className="focus:outline-none hover:scale-110 transition-transform duration-150"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Star clicked:', star, 'for row:', rowIndex);
+              onChange(star);
+            }}
+            style={{ background: 'none', border: 'none', padding: '1px' }}
+          >
+            <Star
+              className={
+                star <= value
+                  ? 'text-yellow-400 fill-yellow-400'
+                  : 'text-gray-300'
+              }
+              size={16}
+              fill={star <= value ? 'currentColor' : 'none'}
+              strokeWidth={1.5}
+            />
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   const formatValue = (value, key, rowIndex) => {
     if (value === null || value === undefined) return '-';
     
@@ -202,6 +266,122 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     
     if (key.includes('%') && typeof value === 'number') {
       return `${value}%`;
+    }
+    
+    // Special handling for Rating column
+    if (key === 'Rating') {
+      return (
+        <div className="flex items-center justify-center py-2">
+          <TableStarRating
+            value={value || 0}
+            onChange={(newRating) => handleRatingChange(rowIndex, newRating)}
+            rowIndex={rowIndex}
+          />
+        </div>
+      );
+    }
+    
+    // Special handling for Good Comp column
+    if (key === 'Good Comp') {
+      const isGoodComp = value === 'YES' || value === true || value === 'yes';
+      return (
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              isGoodComp 
+                ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const newValue = isGoodComp ? 'NO' : 'YES';
+              const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+              const updatedData = [...localData];
+              
+              // Find the actual row in the original data
+              const rowToUpdate = filteredAndSortedData[actualRowIndex];
+              const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+              
+              if (originalIndex !== -1) {
+                updatedData[originalIndex] = {
+                  ...updatedData[originalIndex],
+                  'Good Comp': newValue
+                };
+                
+                setLocalData(updatedData);
+                if (onDataUpdate) {
+                  onDataUpdate(updatedData);
+                }
+              }
+            }}
+          >
+            {isGoodComp ? 'YES' : 'NO'}
+          </button>
+        </div>
+      );
+    }
+
+    // Special handling for Worth Comparison column
+    if (key === 'Worth Comparison') {
+      const getWorthComparisonColor = (worthValue) => {
+        switch (worthValue) {
+          case 'Worth More':
+            return 'bg-green-100 text-green-800 hover:bg-green-200';
+          case 'Worth Less':
+            return 'bg-red-100 text-red-800 hover:bg-red-200';
+          default:
+            return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+        }
+      };
+
+      const cycleWorthComparison = (currentValue) => {
+        switch (currentValue) {
+          case 'Not Set':
+            return 'Worth More';
+          case 'Worth More':
+            return 'Worth Less';
+          case 'Worth Less':
+            return 'Not Set';
+          default:
+            return 'Not Set';
+        }
+      };
+
+      return (
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${getWorthComparisonColor(value)}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const newValue = cycleWorthComparison(value);
+              const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+              const updatedData = [...localData];
+              
+              // Find the actual row in the original data
+              const rowToUpdate = filteredAndSortedData[actualRowIndex];
+              const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+              
+              if (originalIndex !== -1) {
+                updatedData[originalIndex] = {
+                  ...updatedData[originalIndex],
+                  'Worth Comparison': newValue
+                };
+                
+                setLocalData(updatedData);
+                if (onDataUpdate) {
+                  onDataUpdate(updatedData);
+                }
+              }
+            }}
+          >
+            {value || 'Not Set'}
+          </button>
+        </div>
+      );
     }
     
     // For editable fields, make them clickable
@@ -278,18 +458,36 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
       </div>
 
       {/* Editable Fields Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
-        <p className="text-sm text-blue-700 mb-2">
-          Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, BR up1, FB up1, Main Level BR, Main Level Full Bath</strong>
-        </p>
-        <div className="flex items-center gap-2 text-xs text-blue-600">
-          <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
-          <span>Empty editable field</span>
-          <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
-          <span>Field with data</span>
+      {showEditableInfo && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 relative">
+          <button
+            className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
+            onClick={() => setShowEditableInfo(false)}
+            aria-label="Close info box"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
+          <p className="text-sm text-blue-700 mb-2">
+            Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, BR up1, FB up1, Main Level BR, Main Level Full Bath</strong>
+          </p>
+          <p className="text-sm text-blue-700 mb-2">
+            Click on stars in the <strong>Rating</strong> column to rate properties
+          </p>
+          <p className="text-sm text-blue-700 mb-2">
+            Click on <strong>Good Comp</strong> buttons to toggle between YES/NO
+          </p>
+          <p className="text-sm text-blue-700 mb-2">
+            Click on <strong>Worth Comparison</strong> buttons to cycle through Not Set → Worth More → Worth Less
+          </p>
+          <div className="flex items-center gap-2 text-xs text-blue-600">
+            <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
+            <span>Empty editable field</span>
+            <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
+            <span>Field with data</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="table-container">
@@ -320,7 +518,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
                     key={column} 
                     className={`table-cell ${
                       column === 'Address' ? 'sticky left-0 bg-white z-10 shadow-sm' : ''
+                    } ${
+                      column === 'Rating' ? 'relative pointer-events-auto' : ''
                     }`}
+                    onClick={(e) => {
+                      if (column === 'Rating') {
+                        e.stopPropagation();
+                      }
+                    }}
                   >
                     {formatValue(row[column], column, rowIndex)}
                   </td>

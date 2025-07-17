@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { FolderOpen, Trash2, Clock, FileText, AlertCircle } from 'lucide-react';
 import apiService from '../utils/apiService';
+import FileUpload from './FileUpload'; // Added import for FileUpload
 
 const SessionManager = ({ 
   currentData, 
   currentStats, 
   onLoadSession, 
-  isVisible = false 
+  isVisible = false, 
+  onNewSessionUpload 
 }) => {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Load sessions on component mount
   useEffect(() => {
@@ -88,7 +91,37 @@ const SessionManager = ({
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Saved Sessions</h2>
           <p className="text-gray-600">Manage your saved CSV analysis sessions</p>
         </div>
+        <button
+          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center space-x-2"
+          onClick={() => setShowUploadModal(true)}
+        >
+          <span>+ New Session</span>
+        </button>
       </div>
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Session</h3>
+            <FileUpload
+              onFileUpload={(file) => {
+                setShowUploadModal(false);
+                if (onNewSessionUpload) onNewSessionUpload(file);
+              }}
+              isLoading={false}
+            />
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowUploadModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (
