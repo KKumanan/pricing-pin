@@ -240,25 +240,16 @@ function App() {
             <div className="animate-fade-in">
               {activeTab === 'data' && (
                 <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Property Data
-                      </h2>
-                      <p className="text-gray-600">
-                        Detailed view of all properties with sorting and filtering capabilities
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleExport(processedData)}
-                      className="btn-primary flex items-center space-x-2"
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                      <span>Export All Data</span>
-                    </button>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      Property Data
+                    </h2>
+                    <p className="text-gray-600">
+                      Detailed view of all properties with sorting and filtering capabilities
+                    </p>
                   </div>
                   
-                                                       <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
+                  <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
                 </div>
               )}
 

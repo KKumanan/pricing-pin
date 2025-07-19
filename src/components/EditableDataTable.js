@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star } from 'lucide-react';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'Status', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(25);
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [localData, setLocalData] = useState(data);
@@ -14,24 +14,39 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [selectedColumns, setSelectedColumns] = useState([
     'Address', 'MLS #', 'Status', 'List Price', 'Close Price', 
     'Above Grade Finished SQFT', 'Price/SqFt', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
-    'Beds', 'Baths', 'Year Built', 'Rating', 'Good Comp', 'Worth Comparison', 'Status Contractual', 'Long Text', 'Upgrades', 
-    'Parking', 'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath'
+    'Beds', 'Baths', 'Year Built', 'Status Contractual', 'Long Text', 'Upgrades', 
+    'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
+    'Kitchen Exterior', '2 Story Family Room', 'Condition', 'Attached Garage Spaces', 'Detached Garage Spaces',
+    'Rating', 'Good Comp', 'Worth Comparison'
   ]);
 
   // Editable fields configuration
   const editableFields = [
     'Status Contractual', 'Long Text', 'Upgrades', 'Parking', 
-    'BR up1', 'FB up1', 'Main Level BR', 'Main Level Full Bath', 'Rating', 'Good Comp', 'Worth Comparison'
+    'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
+    'Kitchen Exterior', '2 Story Family Room', 'Condition', 'Attached Garage Spaces', 'Detached Garage Spaces',
+    'Rating', 'Good Comp', 'Worth Comparison'
   ];
 
   // Update local data when props change
   React.useEffect(() => {
-    // Ensure every row has default values for Rating, Good Comp, and Worth Comparison
+    // Ensure every row has default values for Rating, Good Comp, Worth Comparison, and new fields
     const dataWithDefaults = data.map(row => ({
       ...row,
       Rating: row.Rating === undefined || row.Rating === null ? 0 : row.Rating,
       'Good Comp': row['Good Comp'] === undefined || row['Good Comp'] === null ? 'NO' : row['Good Comp'],
-      'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison']
+      'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison'],
+      'Upper Level Bedrooms': row['Upper Level Bedrooms'] === undefined || row['Upper Level Bedrooms'] === null ? '' : row['Upper Level Bedrooms'],
+      'Upper Level Full Baths': row['Upper Level Full Baths'] === undefined || row['Upper Level Full Baths'] === null ? '' : row['Upper Level Full Baths'],
+      'Main Level Bedrooms': row['Main Level Bedrooms'] === undefined || row['Main Level Bedrooms'] === null ? '' : row['Main Level Bedrooms'],
+      'Main Level Full Baths': row['Main Level Full Baths'] === undefined || row['Main Level Full Baths'] === null ? '' : row['Main Level Full Baths'],
+      'Lower Level Bedrooms': row['Lower Level Bedrooms'] === undefined || row['Lower Level Bedrooms'] === null ? '' : row['Lower Level Bedrooms'],
+      'Lower Level Full Baths': row['Lower Level Full Baths'] === undefined || row['Lower Level Full Baths'] === null ? '' : row['Lower Level Full Baths'],
+      'Kitchen Exterior': row['Kitchen Exterior'] === undefined || row['Kitchen Exterior'] === null ? '' : row['Kitchen Exterior'],
+      '2 Story Family Room': row['2 Story Family Room'] === undefined || row['2 Story Family Room'] === null ? '' : row['2 Story Family Room'],
+      'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
+      'Attached Garage Spaces': row['Attached Garage Spaces'] === undefined || row['Attached Garage Spaces'] === null ? '' : row['Attached Garage Spaces'],
+      'Detached Garage Spaces': row['Detached Garage Spaces'] === undefined || row['Detached Garage Spaces'] === null ? '' : row['Detached Garage Spaces']
     }));
     setLocalData(dataWithDefaults);
   }, [data]);
@@ -57,6 +72,19 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
         
         if (aVal === null || aVal === undefined) return 1;
         if (bVal === null || bVal === undefined) return -1;
+        
+        // Special handling for Status column
+        if (sortConfig.key === 'Status') {
+          const statusOrder = { 'EXP': 1, 'CLS': 2, 'ACT': 3, 'PND': 4 };
+          const aOrder = statusOrder[aVal] || 5; // Any other status goes last
+          const bOrder = statusOrder[bVal] || 5;
+          
+          if (sortConfig.direction === 'asc') {
+            return aOrder - bOrder;
+          } else {
+            return bOrder - aOrder;
+          }
+        }
         
         if (typeof aVal === 'number' && typeof bVal === 'number') {
           return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
@@ -434,27 +462,13 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           />
         </div>
         
-        <div className="flex gap-2">
-          <select
-            value={selectedColumns.join(',')}
-            onChange={(e) => setSelectedColumns(e.target.value.split(','))}
-            className="input-field max-w-xs"
-          >
-            {allColumns.map(column => (
-              <option key={column} value={[column]}>
-                {column}
-              </option>
-            ))}
-          </select>
-          
-          <button
-            onClick={() => onExport(localData)}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-        </div>
+        <button
+          onClick={() => onExport(localData)}
+          className="btn-secondary flex items-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          Export All Data
+        </button>
       </div>
 
       {/* Editable Fields Info */}
@@ -469,7 +483,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           </button>
           <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
           <p className="text-sm text-blue-700 mb-2">
-            Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, BR up1, FB up1, Main Level BR, Main Level Full Bath</strong>
+            Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, Upper Level Bedrooms, Upper Level Full Baths, Main Level Bedrooms, Main Level Full Baths, Lower Level Bedrooms, Lower Level Full Baths, Kitchen Exterior, 2 Story Family Room, Condition, Attached Garage Spaces, Detached Garage Spaces</strong>
           </p>
           <p className="text-sm text-blue-700 mb-2">
             Click on stars in the <strong>Rating</strong> column to rate properties
@@ -494,44 +508,82 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
         <table className="table">
           <thead>
             <tr>
-              {selectedColumns.map(column => (
-                <th
-                  key={column}
-                  className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${
-                    column === 'Address' ? 'sticky left-0 bg-gray-50 z-20 shadow-sm' : ''
-                  }`}
-                  onClick={() => handleSort(column)}
-                >
-                  <div className="flex items-center gap-1">
-                    {column}
-                    {getSortIcon(column)}
-                  </div>
-                </th>
-              ))}
+              {selectedColumns.map(column => {
+                                  const getColumnWidth = (col) => {
+                    if (col === 'Address') return 'sticky left-0 bg-gray-50 z-20 shadow-sm min-w-[200px]';
+                    if (col === 'Long Text') return 'min-w-[250px]';
+                    if (col === 'Upgrades') return 'min-w-[200px]';
+                    if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[150px]';
+                    if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[150px]';
+                    if (col === 'Kitchen Exterior' || col === '2 Story Family Room') return 'min-w-[140px]';
+                    if (col === 'Condition') return 'min-w-[120px]';
+                    if (col === 'Attached Garage Spaces' || col === 'Detached Garage Spaces') return 'min-w-[160px]';
+                    if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[120px]';
+                    return '';
+                  };
+                
+                return (
+                  <th
+                    key={column}
+                    className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)}`}
+                    onClick={() => handleSort(column)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {column}
+                      {getSortIcon(column)}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedData.map((row, rowIndex) => (
-              <tr key={rowIndex} className="table-row">
-                {selectedColumns.map(column => (
-                  <td 
-                    key={column} 
-                    className={`table-cell ${
-                      column === 'Address' ? 'sticky left-0 bg-white z-10 shadow-sm' : ''
-                    } ${
-                      column === 'Rating' ? 'relative pointer-events-auto' : ''
-                    }`}
-                    onClick={(e) => {
-                      if (column === 'Rating') {
-                        e.stopPropagation();
-                      }
-                    }}
-                  >
-                    {formatValue(row[column], column, rowIndex)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {paginatedData.map((row, rowIndex) => {
+              const isSellerHome = row['Status'] === 'EXP';
+              return (
+                <tr 
+                  key={rowIndex} 
+                  className={`table-row ${
+                    isSellerHome 
+                      ? 'bg-blue-50 border-l-4 border-l-blue-500 hover:bg-blue-100' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {selectedColumns.map(column => {
+                    const getColumnWidth = (col) => {
+                      if (col === 'Address') return `sticky left-0 z-10 shadow-sm ${
+                        isSellerHome ? 'bg-blue-50' : 'bg-white'
+                      } min-w-[200px]`;
+                      if (col === 'Long Text') return 'min-w-[250px]';
+                      if (col === 'Upgrades') return 'min-w-[200px]';
+                      if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[150px]';
+                      if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[150px]';
+                      if (col === 'Kitchen Exterior' || col === '2 Story Family Room') return 'min-w-[140px]';
+                      if (col === 'Condition') return 'min-w-[120px]';
+                      if (col === 'Attached Garage Spaces' || col === 'Detached Garage Spaces') return 'min-w-[160px]';
+                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[120px]';
+                      return '';
+                    };
+                    
+                    return (
+                      <td 
+                        key={column} 
+                        className={`table-cell ${getColumnWidth(column)} ${
+                          column === 'Rating' ? 'relative pointer-events-auto' : ''
+                        }`}
+                        onClick={(e) => {
+                          if (column === 'Rating') {
+                            e.stopPropagation();
+                          }
+                        }}
+                      >
+                        {formatValue(row[column], column, rowIndex)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

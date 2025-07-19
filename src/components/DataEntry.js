@@ -15,10 +15,17 @@ const DataEntry = ({ data, onDataUpdate }) => {
     { key: 'Long Text', label: 'Long Text', type: 'textarea' },
     { key: 'Upgrades', label: 'Upgrades', type: 'textarea' },
     { key: 'Parking', label: 'Parking', type: 'text' },
-    { key: 'BR up1', label: 'BR up1', type: 'number' },
-    { key: 'FB up1', label: 'FB up1', type: 'number' },
-    { key: 'Main Level BR', label: 'Main Level BR', type: 'number' },
-    { key: 'Main Level Full Bath', label: 'Main Level Full Bath', type: 'number' },
+    { key: 'Upper Level Bedrooms', label: 'Upper Level Bedrooms', type: 'number' },
+    { key: 'Upper Level Full Baths', label: 'Upper Level Full Baths', type: 'number' },
+    { key: 'Main Level Bedrooms', label: 'Main Level Bedrooms', type: 'number' },
+    { key: 'Main Level Full Baths', label: 'Main Level Full Baths', type: 'number' },
+    { key: 'Lower Level Bedrooms', label: 'Lower Level Bedrooms', type: 'number' },
+    { key: 'Lower Level Full Baths', label: 'Lower Level Full Baths', type: 'number' },
+    { key: 'Kitchen Exterior', label: 'Kitchen Exterior?', type: 'text' },
+    { key: '2 Story Family Room', label: '2 Story Family Room?', type: 'text' },
+    { key: 'Condition', label: 'Condition', type: 'text' },
+    { key: 'Attached Garage Spaces', label: 'Attached Garage Spaces', type: 'number' },
+    { key: 'Detached Garage Spaces', label: 'Detached Garage Spaces', type: 'number' },
     { key: 'Good Comp', label: 'Good Comp', type: 'select' },
     { key: 'Worth Comparison', label: 'Worth Comparison', type: 'select' }
   ];
@@ -30,10 +37,17 @@ const DataEntry = ({ data, onDataUpdate }) => {
       'Long Text': property['Long Text'] || '',
       'Upgrades': property['Upgrades'] || '',
       'Parking': property['Parking'] || '',
-      'BR up1': property['BR up1'] || '',
-      'FB up1': property['FB up1'] || '',
-      'Main Level BR': property['Main Level BR'] || '',
-      'Main Level Full Bath': property['Main Level Full Bath'] || '',
+      'Upper Level Bedrooms': property['Upper Level Bedrooms'] || '',
+      'Upper Level Full Baths': property['Upper Level Full Baths'] || '',
+      'Main Level Bedrooms': property['Main Level Bedrooms'] || '',
+      'Main Level Full Baths': property['Main Level Full Baths'] || '',
+      'Lower Level Bedrooms': property['Lower Level Bedrooms'] || '',
+      'Lower Level Full Baths': property['Lower Level Full Baths'] || '',
+      'Kitchen Exterior': property['Kitchen Exterior'] || '',
+      '2 Story Family Room': property['2 Story Family Room'] || '',
+      'Condition': property['Condition'] || '',
+      'Attached Garage Spaces': property['Attached Garage Spaces'] || '',
+      'Detached Garage Spaces': property['Detached Garage Spaces'] || '',
       Rating: property.Rating || 0,
       'Good Comp': property['Good Comp'] || 'NO',
       'Worth Comparison': property['Worth Comparison'] || 'Not Set',
@@ -119,7 +133,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
               <Home className="w-5 h-5" />
               Properties
             </h3>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-[700px] overflow-y-auto">
               {data.map((property, index) => (
                 <div
                   key={property['MLS #']}
@@ -281,33 +295,26 @@ const DataEntry = ({ data, onDataUpdate }) => {
                   </div>
                 )}
 
-                {/* Star Rating Section */}
-                <div>
-                  <h4 className="text-md font-medium text-gray-900 mb-3">
-                    Property Rating
-                  </h4>
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Rate this property:</p>
-                        <StarRating
-                          value={formData.Rating || selectedProperty.Rating || 0}
-                          onChange={isEditing ? handleRatingChange : undefined}
-                          editable={isEditing}
-                          size={24}
-                        />
-                      </div>
-                      {!isEditing && (
-                        <button
-                          onClick={handleEdit}
-                          className="btn-secondary flex items-center gap-2 text-sm"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                          Edit Rating
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                {/* Edit/Save Button - positioned above Property Rating */}
+                <div className="mb-4">
+                  {!isEditing && (
+                    <button
+                      onClick={handleEdit}
+                      className="btn-secondary w-full flex items-center justify-center gap-2 text-lg py-3"
+                    >
+                      <Edit3 className="w-5 h-5" />
+                      Edit
+                    </button>
+                  )}
+                  {isEditing && (
+                    <button
+                      onClick={handleSave}
+                      className="btn-primary w-full flex items-center justify-center gap-2 text-lg py-3"
+                    >
+                      <Save className="w-5 h-5" />
+                      Save
+                    </button>
+                  )}
                 </div>
 
                 {/* Data Entry Form */}
@@ -316,6 +323,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
                     Property Data
                   </h4>
                   <div className="space-y-4">
+
                     {/* First row - Status Contractual and Parking */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -350,16 +358,16 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                     </div>
 
-                    {/* Second row - BR up1, FB up1, Main Level BR, Main Level Full Bath */}
+                    {/* Second row - Upper Level Bedrooms, Upper Level Full Baths, Main Level Bedrooms, Main Level Full Baths */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          BR up1
+                          Upper Level Bedrooms
                         </label>
                         <input
                           type="number"
-                          value={formData['BR up1'] || ''}
-                          onChange={(e) => handleInputChange('BR up1', e.target.value)}
+                          value={formData['Upper Level Bedrooms'] || ''}
+                          onChange={(e) => handleInputChange('Upper Level Bedrooms', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -369,12 +377,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          FB up1
+                          Upper Level Full Baths
                         </label>
                         <input
                           type="number"
-                          value={formData['FB up1'] || ''}
-                          onChange={(e) => handleInputChange('FB up1', e.target.value)}
+                          value={formData['Upper Level Full Baths'] || ''}
+                          onChange={(e) => handleInputChange('Upper Level Full Baths', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -384,12 +392,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Main Level BR
+                          Main Level Bedrooms
                         </label>
                         <input
                           type="number"
-                          value={formData['Main Level BR'] || ''}
-                          onChange={(e) => handleInputChange('Main Level BR', e.target.value)}
+                          value={formData['Main Level Bedrooms'] || ''}
+                          onChange={(e) => handleInputChange('Main Level Bedrooms', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -399,12 +407,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Main Level Full Bath
+                          Main Level Full Baths
                         </label>
                         <input
                           type="number"
-                          value={formData['Main Level Full Bath'] || ''}
-                          onChange={(e) => handleInputChange('Main Level Full Bath', e.target.value)}
+                          value={formData['Main Level Full Baths'] || ''}
+                          onChange={(e) => handleInputChange('Main Level Full Baths', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -414,8 +422,121 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                     </div>
 
-                    {/* Good Comp row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Third row - Lower Level Bedrooms, Lower Level Full Baths, Kitchen Exterior, 2 Story Family Room */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Lower Level Bedrooms
+                        </label>
+                        <input
+                          type="number"
+                          value={formData['Lower Level Bedrooms'] || ''}
+                          onChange={(e) => handleInputChange('Lower Level Bedrooms', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Lower Level Full Baths
+                        </label>
+                        <input
+                          type="number"
+                          value={formData['Lower Level Full Baths'] || ''}
+                          onChange={(e) => handleInputChange('Lower Level Full Baths', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Kitchen Exterior?
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['Kitchen Exterior'] || ''}
+                          onChange={(e) => handleInputChange('Kitchen Exterior', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Yes/No"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          2 Story Family Room?
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['2 Story Family Room'] || ''}
+                          onChange={(e) => handleInputChange('2 Story Family Room', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Yes/No"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Fourth row - Condition, Attached Garage, Detached Garage */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Condition
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['Condition'] || ''}
+                          onChange={(e) => handleInputChange('Condition', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Enter condition..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Attached Garage Spaces
+                        </label>
+                        <input
+                          type="number"
+                          value={formData['Attached Garage Spaces'] || ''}
+                          onChange={(e) => handleInputChange('Attached Garage Spaces', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Detached Garage Spaces
+                        </label>
+                        <input
+                          type="number"
+                          value={formData['Detached Garage Spaces'] || ''}
+                          onChange={(e) => handleInputChange('Detached Garage Spaces', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Good Comp, Worth Comparison, and Property Rating row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Good Comp
@@ -448,6 +569,19 @@ const DataEntry = ({ data, onDataUpdate }) => {
                           <option value="Worth More">Worth More</option>
                           <option value="Worth Less">Worth Less</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Property Rating
+                        </label>
+                        <div className="flex items-center h-10 px-3 py-2 border border-gray-300 rounded-md bg-white">
+                          <StarRating
+                            value={formData.Rating || selectedProperty.Rating || 0}
+                            onChange={isEditing ? handleRatingChange : undefined}
+                            editable={isEditing}
+                            size={20}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -484,28 +618,6 @@ const DataEntry = ({ data, onDataUpdate }) => {
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Edit/Save Button - full width below property summary */}
-                  <div className="mt-6">
-                    {!isEditing && (
-                      <button
-                        onClick={handleEdit}
-                        className="btn-secondary w-full flex items-center justify-center gap-2 text-lg py-3"
-                      >
-                        <Edit3 className="w-5 h-5" />
-                        Edit
-                      </button>
-                    )}
-                    {isEditing && (
-                      <button
-                        onClick={handleSave}
-                        className="btn-primary w-full flex items-center justify-center gap-2 text-lg py-3"
-                      >
-                        <Save className="w-5 h-5" />
-                        Save
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
