@@ -102,13 +102,18 @@ function App() {
         stats: stats
       };
 
-      const result = await apiService.saveSession(sessionData);
-      
+      let result;
+      if (currentSessionId) {
+        // Update existing session
+        result = await apiService.updateSession(currentSessionId, sessionData);
+      } else {
+        // Create new session
+        result = await apiService.saveSession(sessionData);
+      }
       setShowSaveModal(false);
       setSaveForm({ name: '', description: '' });
-      setCurrentSessionId(result.id);
+      setCurrentSessionId(result.id || currentSessionId);
       setCurrentSessionName(sessionData.name);
-      
       console.log('Session saved successfully');
     } catch (err) {
       setError('Failed to save session');
