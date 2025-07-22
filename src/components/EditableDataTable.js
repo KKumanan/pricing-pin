@@ -274,6 +274,33 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
       }
     }
     
+    // Custom Close Price indicator logic (must come before generic price formatting)
+    if (key === 'Close Price') {
+      // Find the corresponding List Price for this row
+      const row = paginatedData[rowIndex];
+      const closePrice = parseFloat(row['Close Price']);
+      const listPrice = parseFloat(row['List Price']);
+      if (!isNaN(closePrice) && !isNaN(listPrice)) {
+        if (closePrice > listPrice) {
+          return (
+            <span className="text-green-700 font-semibold flex items-center gap-1">
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
+              <ChevronUp className="inline w-4 h-4 text-green-500" />
+            </span>
+          );
+        } else if (closePrice < listPrice) {
+          return (
+            <span className="text-red-700 font-semibold flex items-center gap-1">
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
+              <ChevronDown className="inline w-4 h-4 text-red-500" />
+            </span>
+          );
+        }
+      }
+      // If equal or not a number, show normal
+      return <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)}</span>;
+    }
+
     if (key.includes('Price') && typeof value === 'number') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -461,14 +488,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
             className="input-field pl-10"
           />
         </div>
-        
-        <button
-          onClick={() => onExport(localData)}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <Download className="w-4 h-4" />
+          
+          <button
+            onClick={() => onExport(localData)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
           Export All Data
-        </button>
+          </button>
       </div>
 
       {/* Editable Fields Info */}
@@ -481,8 +508,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           >
             <X className="w-4 h-4" />
           </button>
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
-          <p className="text-sm text-blue-700 mb-2">
+        <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
+        <p className="text-sm text-blue-700 mb-2">
             Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, Upper Level Bedrooms, Upper Level Full Baths, Main Level Bedrooms, Main Level Full Baths, Lower Level Bedrooms, Lower Level Full Baths, Kitchen Exterior, 2 Story Family Room, Condition, Attached Garage Spaces, Detached Garage Spaces</strong>
           </p>
           <p className="text-sm text-blue-700 mb-2">
@@ -493,14 +520,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           </p>
           <p className="text-sm text-blue-700 mb-2">
             Click on <strong>Worth Comparison</strong> buttons to cycle through Not Set → Worth More → Worth Less
-          </p>
-          <div className="flex items-center gap-2 text-xs text-blue-600">
-            <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
-            <span>Empty editable field</span>
-            <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
-            <span>Field with data</span>
-          </div>
+        </p>
+        <div className="flex items-center gap-2 text-xs text-blue-600">
+          <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
+          <span>Empty editable field</span>
+          <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
+          <span>Field with data</span>
         </div>
+      </div>
       )}
 
       {/* Table */}
@@ -523,16 +550,16 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
                   };
                 
                 return (
-                  <th
-                    key={column}
+                <th
+                  key={column}
                     className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)}`}
-                    onClick={() => handleSort(column)}
-                  >
-                    <div className="flex items-center gap-1">
-                      {column}
-                      {getSortIcon(column)}
-                    </div>
-                  </th>
+                  onClick={() => handleSort(column)}
+                >
+                  <div className="flex items-center gap-1">
+                    {column}
+                    {getSortIcon(column)}
+                  </div>
+                </th>
                 );
               })}
             </tr>
@@ -566,22 +593,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
                     };
                     
                     return (
-                      <td 
-                        key={column} 
+                  <td 
+                    key={column} 
                         className={`table-cell ${getColumnWidth(column)} ${
                           column === 'Rating' ? 'relative pointer-events-auto' : ''
-                        }`}
+                    }`}
                         onClick={(e) => {
                           if (column === 'Rating') {
                             e.stopPropagation();
                           }
                         }}
-                      >
-                        {formatValue(row[column], column, rowIndex)}
-                      </td>
+                  >
+                    {formatValue(row[column], column, rowIndex)}
+                  </td>
                     );
                   })}
-                </tr>
+              </tr>
               );
             })}
           </tbody>

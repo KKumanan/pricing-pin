@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, ExternalLink, Save, Edit3 } from 'lucide-react';
+import { Home, ExternalLink, Save, Edit3, ChevronUp, ChevronDown } from 'lucide-react';
 import StarRating from './StarRating';
 
 const DataEntry = ({ data, onDataUpdate }) => {
@@ -226,6 +226,23 @@ const DataEntry = ({ data, onDataUpdate }) => {
                           <div className="bg-white rounded-lg p-3">
                             <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Price/SqFt</div>
                             <div className="font-medium text-gray-900">{formatValue(selectedProperty['Price/SqFt'], 'Price/SqFt')}</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3">
+                            <div className="text-gray-500 text-xs uppercase tracking-wide mb-1">Close Price</div>
+                            <div className="font-medium text-gray-900 flex items-center gap-1">
+                              {(() => {
+                                const closePrice = parseFloat(selectedProperty['Close Price']);
+                                const listPrice = parseFloat(selectedProperty['List Price']);
+                                if (!isNaN(closePrice) && !isNaN(listPrice)) {
+                                  if (closePrice > listPrice) {
+                                    return <span className="text-green-700 font-semibold flex items-center gap-1">{formatValue(selectedProperty['Close Price'], 'Close Price')}<ChevronUp className="inline w-4 h-4 text-green-500" /></span>;
+                                  } else if (closePrice < listPrice) {
+                                    return <span className="text-red-700 font-semibold flex items-center gap-1">{formatValue(selectedProperty['Close Price'], 'Close Price')}<ChevronDown className="inline w-4 h-4 text-red-500" /></span>;
+                                  }
+                                }
+                                return <span>{formatValue(selectedProperty['Close Price'], 'Close Price')}</span>;
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </div>

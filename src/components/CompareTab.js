@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Home, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Home, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 
 const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
   const [selectedComp, setSelectedComp] = useState(null);
@@ -82,12 +82,12 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
   };
 
   const comparisonFields = [
-    { key: 'List Price', label: 'List Price' },
+  { key: 'List Price', label: 'List Price' },
     { key: 'Close Price', label: 'Close Price' },
-    { key: 'Above Grade Finished SQFT', label: 'Square Feet' },
+  { key: 'Above Grade Finished SQFT', label: 'Square Feet' },
     { key: 'Price/SqFt', label: 'Price/SqFt' },
-    { key: 'Beds', label: 'Beds' },
-    { key: 'Baths', label: 'Baths' },
+  { key: 'Beds', label: 'Beds' },
+  { key: 'Baths', label: 'Baths' },
     { key: 'Year Built', label: 'Year Built' },
     { key: 'DOM', label: 'Days on Market' },
     { key: 'Sq Ft Difference vs EXP', label: 'Sq Ft vs EXP' },
@@ -164,6 +164,23 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                   <p className="font-medium text-gray-900">{formatValue(comp['List Price'], 'List Price')}</p>
                 </div>
                 <div>
+                  <span className="text-gray-500">Close Price:</span>
+                  <p className="font-medium text-gray-900 flex items-center gap-1">
+                    {(() => {
+                      const closePrice = parseFloat(comp['Close Price']);
+                      const listPrice = parseFloat(comp['List Price']);
+                      if (!isNaN(closePrice) && !isNaN(listPrice)) {
+                        if (closePrice > listPrice) {
+                          return <span className="text-green-700 font-semibold flex items-center gap-1">{formatValue(comp['Close Price'], 'Close Price')}<ChevronUp className="inline w-4 h-4 text-green-500" /></span>;
+                        } else if (closePrice < listPrice) {
+                          return <span className="text-red-700 font-semibold flex items-center gap-1">{formatValue(comp['Close Price'], 'Close Price')}<ChevronDown className="inline w-4 h-4 text-red-500" /></span>;
+                        }
+                      }
+                      return <span>{formatValue(comp['Close Price'], 'Close Price')}</span>;
+                    })()}
+                  </p>
+                </div>
+                <div>
                   <span className="text-gray-500">Square Feet:</span>
                   <p className="font-medium text-gray-900">{formatValue(comp['Above Grade Finished SQFT'], 'Above Grade Finished SQFT')}</p>
                 </div>
@@ -182,7 +199,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                 <div className="flex items-center gap-2 text-primary-600 text-sm">
                   <ExternalLink className="w-4 h-4" />
                   <span>Zillow listing available</span>
-                </div>
+                  </div>
               )}
 
               {/* Worth Comparison Status */}

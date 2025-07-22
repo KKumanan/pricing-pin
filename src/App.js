@@ -240,16 +240,16 @@ function App() {
             <div className="animate-fade-in">
               {activeTab === 'data' && (
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      Property Data
-                    </h2>
-                    <p className="text-gray-600">
-                      Detailed view of all properties with sorting and filtering capabilities
-                    </p>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Property Data
+                      </h2>
+                      <p className="text-gray-600">
+                        Detailed view of all properties with sorting and filtering capabilities
+                      </p>
                   </div>
                   
-                  <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
+                                                       <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
                 </div>
               )}
 
