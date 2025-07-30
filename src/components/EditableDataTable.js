@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff } from 'lucide-react';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'Status', direction: 'asc' });
@@ -11,20 +11,40 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
   const [localData, setLocalData] = useState(data);
   const [showEditableInfo, setShowEditableInfo] = useState(true);
   
+  // Drag and drop state
+  const [draggedColumn, setDraggedColumn] = useState(null);
+  const [dragOverColumn, setDragOverColumn] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Row deletion state
+  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState(1);
+  const [rowsToDelete, setRowsToDelete] = useState([]);
+  
+  // Column management state
+  const [showColumnManager, setShowColumnManager] = useState(false);
+  const [hiddenColumns, setHiddenColumns] = useState(new Set());
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [goodCompFilter, setGoodCompFilter] = useState('ALL'); // 'ALL', 'YES', 'NO'
+  const [statusFilter, setStatusFilter] = useState(new Set()); // Set of statuses to exclude
+  
   const [selectedColumns, setSelectedColumns] = useState([
-    'Address', 'MLS #', 'Status', 'List Price', 'Close Price', 
-    'Above Grade Finished SQFT', 'Price/SqFt', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
-    'Beds', 'Baths', 'Year Built', 'Status Contractual', 'Long Text', 'Upgrades', 
+    'Address', 'Status', 'List Price', 'Close Price', 'Worth Comparison',
+    'Above Grade Finished SQFT', 'Price/SqFt', 'LOT SQFT', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
+    'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'Kitchen Exterior', '2 Story Family Room', 'Condition', 'Attached Garage Spaces', 'Detached Garage Spaces',
-    'Rating', 'Good Comp', 'Worth Comparison'
+    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'SUBDIVISION',
+    'Rating', 'Good Comp'
   ]);
 
   // Editable fields configuration
   const editableFields = [
     'Status Contractual', 'Long Text', 'Upgrades', 'Parking', 
     'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'Kitchen Exterior', '2 Story Family Room', 'Condition', 'Attached Garage Spaces', 'Detached Garage Spaces',
+    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'SUBDIVISION', 'LOT SQFT',
     'Rating', 'Good Comp', 'Worth Comparison'
   ];
 
@@ -42,11 +62,15 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
       'Main Level Full Baths': row['Main Level Full Baths'] === undefined || row['Main Level Full Baths'] === null ? '' : row['Main Level Full Baths'],
       'Lower Level Bedrooms': row['Lower Level Bedrooms'] === undefined || row['Lower Level Bedrooms'] === null ? '' : row['Lower Level Bedrooms'],
       'Lower Level Full Baths': row['Lower Level Full Baths'] === undefined || row['Lower Level Full Baths'] === null ? '' : row['Lower Level Full Baths'],
-      'Kitchen Exterior': row['Kitchen Exterior'] === undefined || row['Kitchen Exterior'] === null ? '' : row['Kitchen Exterior'],
+      'KITCHEN': row['KITCHEN'] === undefined || row['KITCHEN'] === null ? '' : row['KITCHEN'],
+      'EXTERIOR': row['EXTERIOR'] === undefined || row['EXTERIOR'] === null ? '' : row['EXTERIOR'],
+      'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] === undefined || row['PRIMARY BATHROOM'] === null ? '' : row['PRIMARY BATHROOM'],
       '2 Story Family Room': row['2 Story Family Room'] === undefined || row['2 Story Family Room'] === null ? '' : row['2 Story Family Room'],
       'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
-      'Attached Garage Spaces': row['Attached Garage Spaces'] === undefined || row['Attached Garage Spaces'] === null ? '' : row['Attached Garage Spaces'],
-      'Detached Garage Spaces': row['Detached Garage Spaces'] === undefined || row['Detached Garage Spaces'] === null ? '' : row['Detached Garage Spaces']
+      'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
+      'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
+      'SUBDIVISION': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
+      'LOT SQFT': row['LOT SQFT'] === undefined || row['LOT SQFT'] === null ? '' : row['LOT SQFT']
     }));
     setLocalData(dataWithDefaults);
   }, [data]);
@@ -59,11 +83,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
-    let filtered = localData.filter(item =>
-      Object.values(item).some(value =>
+    let filtered = localData.filter(item => {
+      // Search term filter
+      const matchesSearch = Object.values(item).some(value =>
         value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
+      );
+      
+      // Good Comp filter
+      const matchesGoodComp = goodCompFilter === 'ALL' || 
+        (goodCompFilter === 'YES' && item['Good Comp'] === 'YES') ||
+        (goodCompFilter === 'NO' && item['Good Comp'] === 'NO');
+      
+      // Status filter (exclude selected statuses)
+      const matchesStatus = !statusFilter.has(item['Status']);
+      
+      return matchesSearch && matchesGoodComp && matchesStatus;
+    });
 
     if (sortConfig.key) {
       filtered.sort((a, b) => {
@@ -102,7 +137,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     }
 
     return filtered;
-  }, [localData, searchTerm, sortConfig]);
+  }, [localData, searchTerm, sortConfig, goodCompFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
@@ -117,6 +152,170 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
+
+  // Drag and drop handlers
+  const handleDragStart = (e, column) => {
+    setDraggedColumn(column);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', column);
+  };
+
+  const handleDragOver = (e, column) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (column !== draggedColumn) {
+      setDragOverColumn(column);
+    }
+  };
+
+  const handleDragEnter = (e, column) => {
+    e.preventDefault();
+    if (column !== draggedColumn) {
+      setDragOverColumn(column);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e, targetColumn) => {
+    e.preventDefault();
+    if (draggedColumn && targetColumn && draggedColumn !== targetColumn) {
+      const newColumns = [...selectedColumns];
+      const draggedIndex = newColumns.indexOf(draggedColumn);
+      const targetIndex = newColumns.indexOf(targetColumn);
+      
+      // Remove dragged column from its current position
+      newColumns.splice(draggedIndex, 1);
+      // Insert dragged column at target position
+      newColumns.splice(targetIndex, 0, draggedColumn);
+      
+      setSelectedColumns(newColumns);
+    }
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+    setIsDragging(false);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedColumn(null);
+    setDragOverColumn(null);
+    setIsDragging(false);
+  };
+
+  // Row deletion handlers
+  const handleRowSelect = (rowIndex) => {
+    const newSelectedRows = new Set(selectedRows);
+    if (newSelectedRows.has(rowIndex)) {
+      newSelectedRows.delete(rowIndex);
+    } else {
+      newSelectedRows.add(rowIndex);
+    }
+    setSelectedRows(newSelectedRows);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedRows.size === paginatedData.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(paginatedData.map((_, index) => index)));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    const selectedData = Array.from(selectedRows).map(index => paginatedData[index]);
+    setRowsToDelete(selectedData);
+    setShowDeleteConfirm(true);
+    setDeleteConfirmStep(1);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmStep === 1) {
+      setDeleteConfirmStep(2);
+    } else {
+      // Final confirmation - delete the rows
+      const rowsToDeleteIndexes = rowsToDelete.map(row => 
+        localData.findIndex(item => item['Address'] === row['Address'])
+      );
+      
+      const newData = localData.filter((_, index) => !rowsToDeleteIndexes.includes(index));
+      setLocalData(newData);
+      onDataUpdate(newData);
+      
+      // Reset state
+      setSelectedRows(new Set());
+      setShowDeleteConfirm(false);
+      setDeleteConfirmStep(1);
+      setRowsToDelete([]);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setDeleteConfirmStep(1);
+    setRowsToDelete([]);
+  };
+
+  // Column management handlers
+  const handleToggleColumn = (column) => {
+    const newHiddenColumns = new Set(hiddenColumns);
+    if (newHiddenColumns.has(column)) {
+      newHiddenColumns.delete(column);
+    } else {
+      newHiddenColumns.add(column);
+    }
+    setHiddenColumns(newHiddenColumns);
+  };
+
+  const handleShowAllColumns = () => {
+    setHiddenColumns(new Set());
+  };
+
+  const handleHideAllColumns = () => {
+    setHiddenColumns(new Set(allColumns));
+  };
+
+  // Filter handlers
+  const handleGoodCompFilterChange = (value) => {
+    setGoodCompFilter(value);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleStatusFilterToggle = (status) => {
+    const newStatusFilter = new Set(statusFilter);
+    if (newStatusFilter.has(status)) {
+      newStatusFilter.delete(status);
+    } else {
+      newStatusFilter.add(status);
+    }
+    setStatusFilter(newStatusFilter);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleClearFilters = () => {
+    setGoodCompFilter('ALL');
+    setStatusFilter(new Set());
+    setCurrentPage(1);
+  };
+
+  // Get unique statuses for filter options
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set();
+    localData.forEach(item => {
+      if (item['Status']) {
+        statuses.add(item['Status']);
+      }
+    });
+    return Array.from(statuses).sort();
+  }, [localData]);
+
+  // Get visible columns (excluding hidden ones)
+  const visibleColumns = useMemo(() => {
+    return selectedColumns.filter(column => !hiddenColumns.has(column));
+  }, [selectedColumns, hiddenColumns]);
 
   const startEditing = (rowIndex, column, value) => {
     if (!editableFields.includes(column)) return;
@@ -229,31 +428,15 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     
     if (isEditing) {
       return (
-        <div className="flex items-center gap-1">
-          <input
-            type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyPress}
-            onBlur={saveEdit}
-            className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
-            autoFocus
-          />
-          <button
-            onClick={saveEdit}
-            className="p-1 text-green-600 hover:text-green-700"
-            title="Save"
-          >
-            <Save className="w-3 h-3" />
-          </button>
-          <button
-            onClick={cancelEdit}
-            className="p-1 text-red-600 hover:text-red-700"
-            title="Cancel"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          onBlur={saveEdit}
+          className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+          autoFocus
+        />
       );
     }
     
@@ -311,6 +494,18 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     }
     
     if (key.includes('SQFT') && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key.includes('Lot') && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'LOT SQFT' && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'BELOW GRADE SQFT' && typeof value === 'number') {
       return new Intl.NumberFormat('en-US').format(value);
     }
     
@@ -457,6 +652,17 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     return value.toString();
   };
 
+  const getDisplayName = (columnName) => {
+    const displayNames = {
+      'Sq Ft Difference vs EXP': 'SQFT DIFFERENCE',
+      'Lot Difference vs EXP': 'LOT SQFT DIFFERENCE',
+      'LOT SQFT': 'LOT SQFT',
+      'BELOW GRADE SQFT': 'BELOW GRADE SQFT',
+      'SUBDIVISION': 'SUBDIVISION',
+    };
+    return displayNames[columnName] || columnName;
+  };
+
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) {
       return <ChevronUp className="w-4 h-4 text-gray-400" />;
@@ -478,7 +684,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -488,14 +694,47 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
             className="input-field pl-10"
           />
         </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`btn-secondary flex items-center gap-2 ${showFilters ? 'bg-primary-100 text-primary-700' : ''}`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {(goodCompFilter !== 'ALL' || statusFilter.size > 0) && (
+              <span className="bg-primary-600 text-white text-xs rounded-full px-2 py-1 ml-1">
+                {(goodCompFilter !== 'ALL' ? 1 : 0) + statusFilter.size}
+              </span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setShowColumnManager(true)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Columns
+          </button>
+          
+          {selectedRows.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="btn-danger flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Selected ({selectedRows.size})
+            </button>
+          )}
           
           <button
             onClick={() => onExport(localData)}
             className="btn-secondary flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-          Export All Data
+            Export All Data
           </button>
+        </div>
       </div>
 
       {/* Editable Fields Info */}
@@ -530,33 +769,120 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
       </div>
       )}
 
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+            <button
+              onClick={handleClearFilters}
+              className="text-sm text-gray-600 hover:text-gray-800 underline"
+            >
+              Clear All Filters
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Good Comp Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Good Comp Filter
+              </label>
+              <select
+                value={goodCompFilter}
+                onChange={(e) => handleGoodCompFilterChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="ALL">Show All</option>
+                <option value="YES">Show Only YES</option>
+                <option value="NO">Show Only NO</option>
+              </select>
+            </div>
+            
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Exclude Status
+              </label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {uniqueStatuses.map(status => (
+                  <label key={status} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.has(status)}
+                      onChange={() => handleStatusFilterToggle(status)}
+                      className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">{status}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Filter Summary */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Showing {filteredAndSortedData.length} of {localData.length} properties
+              {goodCompFilter !== 'ALL' && ` (Good Comp: ${goodCompFilter})`}
+              {statusFilter.size > 0 && ` (Excluding: ${Array.from(statusFilter).join(', ')})`}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="table-container">
         <table className="table">
           <thead>
             <tr>
-              {selectedColumns.map(column => {
+              {/* Checkbox column for row selection */}
+              <th className="table-header w-12 px-4 py-3">
+                <div className="flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.size === paginatedData.length && paginatedData.length > 0}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                  />
+                </div>
+              </th>
+              {visibleColumns.map(column => {
                                   const getColumnWidth = (col) => {
-                    if (col === 'Address') return 'sticky left-0 bg-gray-50 z-20 shadow-sm min-w-[200px]';
-                    if (col === 'Long Text') return 'min-w-[250px]';
-                    if (col === 'Upgrades') return 'min-w-[200px]';
-                    if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[150px]';
-                    if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[150px]';
-                    if (col === 'Kitchen Exterior' || col === '2 Story Family Room') return 'min-w-[140px]';
-                    if (col === 'Condition') return 'min-w-[120px]';
-                    if (col === 'Attached Garage Spaces' || col === 'Detached Garage Spaces') return 'min-w-[160px]';
-                    if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[120px]';
+                    if (col === 'Address') return 'sticky left-0 bg-gray-50 z-20 shadow-sm min-w-[180px]';
+                    if (col === 'Long Text') return 'min-w-[200px]';
+                    if (col === 'Upgrades') return 'min-w-[180px]';
+                                          if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[130px]';
+                      if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[130px]';
+                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === '2 Story Family Room') return 'min-w-[120px]';
+                      if (col === 'Condition') return 'min-w-[100px]';
+                    if (col === 'GARAGE SPACES') return 'min-w-[140px]';
+                    if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
+                    if (col === 'SUBDIVISION') return 'min-w-[160px]';
+                    if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                     return '';
                   };
                 
                 return (
                 <th
                   key={column}
-                    className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)}`}
+                  className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)} ${
+                    draggedColumn === column ? 'opacity-50' : ''
+                  } ${
+                    dragOverColumn === column ? 'bg-blue-100 border-l-2 border-blue-500' : ''
+                  }`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, column)}
+                  onDragOver={(e) => handleDragOver(e, column)}
+                  onDragEnter={(e) => handleDragEnter(e, column)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, column)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handleSort(column)}
                 >
                   <div className="flex items-center gap-1">
-                    {column}
+                    <GripVertical className="w-3 h-3 text-gray-400 cursor-grab hover:text-gray-600 mr-1" />
+                    {getDisplayName(column)}
                     {getSortIcon(column)}
                   </div>
                 </th>
@@ -576,19 +902,32 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
                       : 'hover:bg-gray-50'
                   }`}
                 >
-                  {selectedColumns.map(column => {
+                  {/* Checkbox cell for row selection */}
+                  <td className="table-cell w-12 px-4 py-3">
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.has(rowIndex)}
+                        onChange={() => handleRowSelect(rowIndex)}
+                        className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 focus:ring-2"
+                      />
+                    </div>
+                  </td>
+                  {visibleColumns.map(column => {
                     const getColumnWidth = (col) => {
                       if (col === 'Address') return `sticky left-0 z-10 shadow-sm ${
                         isSellerHome ? 'bg-blue-50' : 'bg-white'
-                      } min-w-[200px]`;
-                      if (col === 'Long Text') return 'min-w-[250px]';
-                      if (col === 'Upgrades') return 'min-w-[200px]';
-                      if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[150px]';
-                      if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[150px]';
-                      if (col === 'Kitchen Exterior' || col === '2 Story Family Room') return 'min-w-[140px]';
-                      if (col === 'Condition') return 'min-w-[120px]';
-                      if (col === 'Attached Garage Spaces' || col === 'Detached Garage Spaces') return 'min-w-[160px]';
-                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[120px]';
+                      } min-w-[180px]`;
+                      if (col === 'Long Text') return 'min-w-[200px]';
+                      if (col === 'Upgrades') return 'min-w-[180px]';
+                      if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[130px]';
+                      if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[130px]';
+                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === '2 Story Family Room') return 'min-w-[120px]';
+                      if (col === 'Condition') return 'min-w-[100px]';
+                      if (col === 'GARAGE SPACES') return 'min-w-[140px]';
+                      if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
+                      if (col === 'SUBDIVISION') return 'min-w-[160px]';
+                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                       return '';
                     };
                     
@@ -615,10 +954,135 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
         </table>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">
+                  {deleteConfirmStep === 1 ? 'Confirm Deletion' : 'Final Confirmation'}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {deleteConfirmStep === 1 
+                    ? `Are you sure you want to delete ${rowsToDelete.length} selected row${rowsToDelete.length > 1 ? 's' : ''}?`
+                    : 'This action cannot be undone. Are you absolutely sure?'
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {deleteConfirmStep === 1 && (
+              <div className="mb-4 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-gray-700 mb-2">Selected properties:</p>
+                {rowsToDelete.map((row, index) => (
+                  <div key={index} className="text-sm text-gray-600 py-1 border-b border-gray-100">
+                    {row['Address'] || `Property ${index + 1}`}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelDelete}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className={`btn-danger ${deleteConfirmStep === 2 ? 'bg-red-700 hover:bg-red-800' : ''}`}
+              >
+                {deleteConfirmStep === 1 ? 'Delete' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Column Management Modal */}
+      {showColumnManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Column Management</h3>
+              <button
+                onClick={() => setShowColumnManager(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={handleShowAllColumns}
+                  className="btn-secondary text-sm"
+                >
+                  Show All
+                </button>
+                <button
+                  onClick={handleHideAllColumns}
+                  className="btn-secondary text-sm"
+                >
+                  Hide All
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {allColumns.map(column => (
+                  <div
+                    key={column}
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                      hiddenColumns.has(column)
+                        ? 'bg-gray-50 border-gray-200'
+                        : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <button
+                      onClick={() => handleToggleColumn(column)}
+                      className="flex items-center gap-2 flex-1 text-left"
+                    >
+                      {hiddenColumns.has(column) ? (
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <Eye className="w-4 h-4 text-green-600" />
+                      )}
+                      <span className={`text-sm ${
+                        hiddenColumns.has(column) ? 'text-gray-500' : 'text-gray-900'
+                      }`}>
+                        {getDisplayName(column)}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+              <div className="text-sm text-gray-600">
+                {visibleColumns.length} of {allColumns.length} columns visible
+              </div>
+              <button
+                onClick={() => setShowColumnManager(false)}
+                className="btn-primary"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+          <div className="text-base text-gray-700">
             Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
             {Math.min(currentPage * itemsPerPage, filteredAndSortedData.length)} of{' '}
             {filteredAndSortedData.length} results
@@ -633,7 +1097,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
               Previous
             </button>
             
-            <span className="flex items-center px-3 py-2 text-sm text-gray-700">
+            <span className="flex items-center px-3 py-2 text-base text-gray-700">
               Page {currentPage} of {totalPages}
             </span>
             

@@ -78,20 +78,38 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
       return new Intl.NumberFormat('en-US').format(value);
     }
     
+    if (key.includes('Lot') && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'LOT SQFT' && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'BELOW GRADE SQFT' && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
     return value.toString();
   };
 
   const comparisonFields = [
   { key: 'List Price', label: 'List Price' },
     { key: 'Close Price', label: 'Close Price' },
-  { key: 'Above Grade Finished SQFT', label: 'Square Feet' },
+      { key: 'Above Grade Finished SQFT', label: 'Square Feet' },
     { key: 'Price/SqFt', label: 'Price/SqFt' },
+    { key: 'LOT SQFT', label: 'LOT SQFT' },
+    { key: 'BELOW GRADE SQFT', label: 'BELOW GRADE SQFT' },
+    { key: 'SUBDIVISION', label: 'SUBDIVISION' },
   { key: 'Beds', label: 'Beds' },
   { key: 'Baths', label: 'Baths' },
     { key: 'Year Built', label: 'Year Built' },
     { key: 'DOM', label: 'Days on Market' },
-    { key: 'Sq Ft Difference vs EXP', label: 'Sq Ft vs EXP' },
-    { key: 'Lot Difference vs EXP', label: 'Lot Size vs EXP' },
+    { key: 'KITCHEN', label: 'KITCHEN' },
+    { key: 'EXTERIOR', label: 'EXTERIOR' },
+    { key: 'PRIMARY BATHROOM', label: 'PRIMARY BATHROOM' },
+    { key: 'Sq Ft Difference vs EXP', label: 'SQFT DIFFERENCE' },
+    { key: 'Lot Difference vs EXP', label: 'LOT SQFT DIFFERENCE' },
     { key: 'Rating', label: 'Rating' },
     { key: 'Good Comp', label: 'Good Comp' }
   ];
@@ -156,9 +174,9 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
             {/* Property Info */}
             <div className="space-y-2">
               <h3 className="font-semibold text-lg text-gray-900">{comp['Address']}</h3>
-              <p className="text-sm text-gray-600">MLS: {comp['MLS #']} • {comp['Status']}</p>
+              <p className="text-base text-gray-600">MLS: {comp['MLS #']} • {comp['Status']}</p>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-base">
                 <div>
                   <span className="text-gray-500">List Price:</span>
                   <p className="font-medium text-gray-900">{formatValue(comp['List Price'], 'List Price')}</p>
@@ -189,6 +207,14 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                   <p className="font-medium text-gray-900">{comp['Beds']} bed, {comp['Baths']} bath</p>
                 </div>
                 <div>
+                  <span className="text-gray-500">Below Grade:</span>
+                  <p className="font-medium text-gray-900">{formatValue(comp['BELOW GRADE SQFT'], 'BELOW GRADE SQFT')}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Subdivision:</span>
+                  <p className="font-medium text-gray-900">{comp['SUBDIVISION'] || '-'}</p>
+                </div>
+                <div>
                   <span className="text-gray-500">Rating:</span>
                   <p className="font-medium text-gray-900">{comp['Rating'] || 0} stars</p>
                 </div>
@@ -196,15 +222,15 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
 
               {/* Zillow Link Indicator */}
               {comp['Zillow Link'] && (
-                <div className="flex items-center gap-2 text-primary-600 text-sm">
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Zillow listing available</span>
+                                  <div className="flex items-center gap-2 text-primary-600 text-base">
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Zillow listing available</span>
                   </div>
               )}
 
               {/* Worth Comparison Status */}
               {comp['Worth Comparison'] && comp['Worth Comparison'] !== 'Not Set' && (
-                <div className={`text-center pt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                <div className={`text-center pt-2 px-3 py-1 rounded-full text-sm font-medium ${
                   comp['Worth Comparison'] === 'Worth More' 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
@@ -221,7 +247,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
       {/* Comparison Popup */}
       {showPopup && selectedComp && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
+          <div className="bg-white rounded-lg w-full max-h-[90vh] overflow-y-auto relative">
             {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
               <h3 className="text-xl font-semibold text-gray-900">Property Comparison</h3>
@@ -316,10 +342,10 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                   <table className="w-full border border-gray-200 rounded-lg">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Field</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Seller's Home</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Selected Property</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Difference</th>
+                        <th className="px-4 py-3 text-left text-base font-medium text-gray-700">Field</th>
+                        <th className="px-4 py-3 text-left text-base font-medium text-gray-700">Seller's Home</th>
+                        <th className="px-4 py-3 text-left text-base font-medium text-gray-700">Selected Property</th>
+                        <th className="px-4 py-3 text-left text-base font-medium text-gray-700">Difference</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -332,16 +358,16 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                         
                         return (
                           <tr key={field.key} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900">{field.label}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{formatValue(sellerValue, field.key)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-700">{formatValue(compValue, field.key)}</td>
-                            <td className="px-4 py-3 text-sm">
-                              {difference !== null ? (
-                                <span className={`font-medium ${difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                  {difference > 0 ? '+' : ''}{formatValue(difference, field.key)}
-                                </span>
-                              ) : '-'}
-                            </td>
+                            <td className="px-4 py-3 text-base font-medium text-gray-900">{field.label}</td>
+                            <td className="px-4 py-3 text-base text-gray-700">{formatValue(sellerValue, field.key)}</td>
+                            <td className="px-4 py-3 text-base text-gray-700">{formatValue(compValue, field.key)}</td>
+                                                          <td className="px-4 py-3 text-base">
+                                {difference !== null ? (
+                                  <span className={`font-medium ${difference > 0 ? 'text-green-600' : difference < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                    {difference > 0 ? '+' : ''}{formatValue(difference, field.key)}
+                                  </span>
+                                ) : '-'}
+                              </td>
                           </tr>
                         );
                       })}

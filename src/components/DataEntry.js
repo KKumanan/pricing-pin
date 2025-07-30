@@ -21,11 +21,15 @@ const DataEntry = ({ data, onDataUpdate }) => {
     { key: 'Main Level Full Baths', label: 'Main Level Full Baths', type: 'number' },
     { key: 'Lower Level Bedrooms', label: 'Lower Level Bedrooms', type: 'number' },
     { key: 'Lower Level Full Baths', label: 'Lower Level Full Baths', type: 'number' },
-    { key: 'Kitchen Exterior', label: 'Kitchen Exterior?', type: 'text' },
+    { key: 'KITCHEN', label: 'KITCHEN', type: 'text' },
+    { key: 'EXTERIOR', label: 'EXTERIOR', type: 'text' },
+    { key: 'PRIMARY BATHROOM', label: 'PRIMARY BATHROOM', type: 'text' },
     { key: '2 Story Family Room', label: '2 Story Family Room?', type: 'text' },
     { key: 'Condition', label: 'Condition', type: 'text' },
-    { key: 'Attached Garage Spaces', label: 'Attached Garage Spaces', type: 'number' },
-    { key: 'Detached Garage Spaces', label: 'Detached Garage Spaces', type: 'number' },
+    { key: 'GARAGE SPACES', label: 'Garage Spaces', type: 'number' },
+    { key: 'BELOW GRADE SQFT', label: 'BELOW GRADE SQFT', type: 'number' },
+    { key: 'SUBDIVISION', label: 'SUBDIVISION', type: 'text' },
+    { key: 'LOT SQFT', label: 'LOT SQFT', type: 'number' },
     { key: 'Good Comp', label: 'Good Comp', type: 'select' },
     { key: 'Worth Comparison', label: 'Worth Comparison', type: 'select' }
   ];
@@ -43,11 +47,15 @@ const DataEntry = ({ data, onDataUpdate }) => {
       'Main Level Full Baths': property['Main Level Full Baths'] || '',
       'Lower Level Bedrooms': property['Lower Level Bedrooms'] || '',
       'Lower Level Full Baths': property['Lower Level Full Baths'] || '',
-      'Kitchen Exterior': property['Kitchen Exterior'] || '',
+      'KITCHEN': property['KITCHEN'] || '',
+      'EXTERIOR': property['EXTERIOR'] || '',
+      'PRIMARY BATHROOM': property['PRIMARY BATHROOM'] || '',
       '2 Story Family Room': property['2 Story Family Room'] || '',
       'Condition': property['Condition'] || '',
-      'Attached Garage Spaces': property['Attached Garage Spaces'] || '',
-      'Detached Garage Spaces': property['Detached Garage Spaces'] || '',
+      'GARAGE SPACES': property['GARAGE SPACES'] || '',
+      'BELOW GRADE SQFT': property['BELOW GRADE SQFT'] || '',
+      'SUBDIVISION': property['SUBDIVISION'] || '',
+      'LOT SQFT': property['LOT SQFT'] || '',
       Rating: property.Rating || 0,
       'Good Comp': property['Good Comp'] || 'NO',
       'Worth Comparison': property['Worth Comparison'] || 'Not Set',
@@ -106,6 +114,18 @@ const DataEntry = ({ data, onDataUpdate }) => {
     }
     
     if (key.includes('SQFT') && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key.includes('Lot') && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'LOT SQFT' && typeof value === 'number') {
+      return new Intl.NumberFormat('en-US').format(value);
+    }
+    
+    if (key === 'BELOW GRADE SQFT' && typeof value === 'number') {
       return new Intl.NumberFormat('en-US').format(value);
     }
     
@@ -439,8 +459,8 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                     </div>
 
-                    {/* Third row - Lower Level Bedrooms, Lower Level Full Baths, Kitchen Exterior, 2 Story Family Room */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Third row - Lower Level Bedrooms, Lower Level Full Baths, KITCHEN, EXTERIOR, PRIMARY BATHROOM, 2 Story Family Room */}
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Lower Level Bedrooms
@@ -473,17 +493,47 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Kitchen Exterior?
+                          KITCHEN
                         </label>
                         <input
                           type="text"
-                          value={formData['Kitchen Exterior'] || ''}
-                          onChange={(e) => handleInputChange('Kitchen Exterior', e.target.value)}
+                          value={formData['KITCHEN'] || ''}
+                          onChange={(e) => handleInputChange('KITCHEN', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
                           }`}
-                          placeholder="Yes/No"
+                          placeholder="Enter kitchen details..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          EXTERIOR
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['EXTERIOR'] || ''}
+                          onChange={(e) => handleInputChange('EXTERIOR', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Enter exterior details..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          PRIMARY BATHROOM
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['PRIMARY BATHROOM'] || ''}
+                          onChange={(e) => handleInputChange('PRIMARY BATHROOM', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Enter primary bathroom details..."
                         />
                       </div>
                       <div>
@@ -522,12 +572,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Attached Garage Spaces
+                          Garage Spaces
                         </label>
                         <input
                           type="number"
-                          value={formData['Attached Garage Spaces'] || ''}
-                          onChange={(e) => handleInputChange('Attached Garage Spaces', e.target.value)}
+                          value={formData['GARAGE SPACES'] || ''}
+                          onChange={(e) => handleInputChange('GARAGE SPACES', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -537,12 +587,42 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Detached Garage Spaces
+                          BELOW GRADE SQFT
                         </label>
                         <input
                           type="number"
-                          value={formData['Detached Garage Spaces'] || ''}
-                          onChange={(e) => handleInputChange('Detached Garage Spaces', e.target.value)}
+                          value={formData['BELOW GRADE SQFT'] || ''}
+                          onChange={(e) => handleInputChange('BELOW GRADE SQFT', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          SUBDIVISION
+                        </label>
+                        <input
+                          type="text"
+                          value={formData['SUBDIVISION'] || ''}
+                          onChange={(e) => handleInputChange('SUBDIVISION', e.target.value)}
+                          disabled={!isEditing}
+                          className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                            !isEditing ? 'border-gray-300 border-dashed' : ''
+                          }`}
+                          placeholder="Enter subdivision..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          LOT SQFT
+                        </label>
+                        <input
+                          type="number"
+                          value={formData['LOT SQFT'] || ''}
+                          onChange={(e) => handleInputChange('LOT SQFT', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''

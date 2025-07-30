@@ -38,6 +38,18 @@ export const processCSVData = (csvText) => {
             'FB up1': row['FB up1'] || '',
             'Main Level BR': row['Main Level BR'] || '',
             'Main Level Full Bath': row['Main Level Full Bath'] || '',
+            // Split Kitchen Exterior into separate fields
+            'KITCHEN': row['KITCHEN'] || '',
+            'EXTERIOR': row['EXTERIOR'] || '',
+            'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] || '',
+            // Combine garage spaces
+            'GARAGE SPACES': combineGarageSpaces(row['Attached Garage # of Spaces'], row['Detached Garage # of Spaces']),
+            // Add lot size in square feet
+            'LOT SQFT': parseLotSize(row['Acres/Lot SF']),
+            // Add below grade square footage
+            'BELOW GRADE SQFT': parseNumber(row['Below Grade Finished SQFT']),
+            // Add subdivision name
+            'SUBDIVISION': row['Subdivision/Neighborhood'] || '',
           }));
           resolve(processedData);
         }
@@ -139,9 +151,16 @@ const parseBaths = (bathsStr) => {
 
 const parseLotSize = (lotStr) => {
   if (!lotStr) return 0;
-  // Extract the first number from formats like "0.21 / 9365"
-  const match = lotStr.match(/(\d+\.?\d*)/);
-  return match ? parseFloat(match[1]) : 0;
+  // Extract the square feet value from formats like "0.21 / 9365"
+  const match = lotStr.match(/(\d+\.?\d*)\s*\/\s*(\d+)/);
+  return match ? parseFloat(match[2]) : 0; // Return the square feet value (second number)
+};
+
+const combineGarageSpaces = (attachedSpaces, detachedSpaces) => {
+  const attached = parseNumber(attachedSpaces) || 0;
+  const detached = parseNumber(detachedSpaces) || 0;
+  const total = attached + detached;
+  return total > 0 ? total : null;
 };
 
 const generateZillowLink = (address, city) => {
