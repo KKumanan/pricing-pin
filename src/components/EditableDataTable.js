@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff } from 'lucide-react';
 
-const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
+const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'Status', direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -579,6 +579,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
         switch (worthValue) {
           case 'Worth More':
             return 'bg-green-100 text-green-800 hover:bg-green-200';
+          case 'About the Same':
+            return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
           case 'Worth Less':
             return 'bg-red-100 text-red-800 hover:bg-red-200';
           default:
@@ -591,6 +593,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           case 'Not Set':
             return 'Worth More';
           case 'Worth More':
+            return 'About the Same';
+          case 'About the Same':
             return 'Worth Less';
           case 'Worth Less':
             return 'Not Set';
@@ -757,9 +761,12 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           <p className="text-sm text-blue-700 mb-2">
             Click on <strong>Good Comp</strong> buttons to toggle between YES/NO
           </p>
-          <p className="text-sm text-blue-700 mb-2">
-            Click on <strong>Worth Comparison</strong> buttons to cycle through Not Set → Worth More → Worth Less
-        </p>
+                      <p className="text-sm text-blue-700 mb-2">
+              Click on <strong>Worth Comparison</strong> buttons to cycle through Not Set → Worth More → About the Same → Worth Less
+            </p>
+            <p className="text-sm text-blue-700 mb-2">
+              Click the <strong>star icon</strong> next to any property to set it as the reference property for comparisons
+            </p>
         <div className="flex items-center gap-2 text-xs text-blue-600">
           <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
           <span>Empty editable field</span>
@@ -839,6 +846,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
               {/* Checkbox column for row selection */}
               <th className="table-header w-12 px-4 py-3">
                 <div className="flex items-center justify-center">
+                  <Star className="w-4 h-4 text-gray-400" />
+                </div>
+              </th>
+              <th className="table-header w-12 px-4 py-3">
+                <div className="flex items-center justify-center">
                   <input
                     type="checkbox"
                     checked={selectedRows.size === paginatedData.length && paginatedData.length > 0}
@@ -892,16 +904,32 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedData.map((row, rowIndex) => {
-              const isSellerHome = row['Status'] === 'EXP';
+              const isStarredProperty = starredPropertyId === row['MLS #'];
               return (
                 <tr 
                   key={rowIndex} 
                   className={`table-row ${
-                    isSellerHome 
-                      ? 'bg-blue-50 border-l-4 border-l-blue-500 hover:bg-blue-100' 
+                    isStarredProperty 
+                      ? 'bg-yellow-50 border-l-4 border-l-yellow-500 hover:bg-yellow-100' 
                       : 'hover:bg-gray-50'
                   }`}
                 >
+                  {/* Star cell for reference property */}
+                  <td className="table-cell w-12 px-4 py-3">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => onStarProperty && onStarProperty(row['MLS #'])}
+                        className={`p-1 rounded-full transition-colors ${
+                          starredPropertyId === row['MLS #']
+                            ? 'text-yellow-500 hover:text-yellow-600'
+                            : 'text-gray-400 hover:text-yellow-500'
+                        }`}
+                        title={starredPropertyId === row['MLS #'] ? 'Remove as Reference Property' : 'Set as Reference Property'}
+                      >
+                        <Star className={`w-4 h-4 ${starredPropertyId === row['MLS #'] ? 'fill-current' : ''}`} />
+                      </button>
+                    </div>
+                  </td>
                   {/* Checkbox cell for row selection */}
                   <td className="table-cell w-12 px-4 py-3">
                     <div className="flex items-center justify-center">
@@ -916,7 +944,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate }) => {
                   {visibleColumns.map(column => {
                     const getColumnWidth = (col) => {
                       if (col === 'Address') return `sticky left-0 z-10 shadow-sm ${
-                        isSellerHome ? 'bg-blue-50' : 'bg-white'
+                        isStarredProperty ? 'bg-yellow-50' : 'bg-white'
                       } min-w-[180px]`;
                       if (col === 'Long Text') return 'min-w-[200px]';
                       if (col === 'Upgrades') return 'min-w-[180px]';

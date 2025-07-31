@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronUp, ChevronDown, Home, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Home, ExternalLink, TrendingUp, TrendingDown, Minus, Star } from 'lucide-react';
 
-const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
+const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [selectedComp, setSelectedComp] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [comparisonResult, setComparisonResult] = useState(null);
@@ -27,6 +27,8 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
     // Set the comparison result based on existing worth comparison
     if (comp['Worth Comparison'] === 'Worth More') {
       setComparisonResult('more');
+    } else if (comp['Worth Comparison'] === 'About the Same') {
+      setComparisonResult('same');
     } else if (comp['Worth Comparison'] === 'Worth Less') {
       setComparisonResult('less');
     } else {
@@ -40,9 +42,28 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
     setComparisonResult(null);
   };
 
-  const handleWorthComparison = (isWorthMore) => {
-    const worthValue = isWorthMore ? 'Worth More' : 'Worth Less';
-    setComparisonResult(isWorthMore ? 'more' : 'less');
+  const handleWorthComparison = (comparisonType) => {
+    let worthValue;
+    let resultType;
+    
+    switch (comparisonType) {
+      case 'more':
+        worthValue = 'Worth More';
+        resultType = 'more';
+        break;
+      case 'same':
+        worthValue = 'About the Same';
+        resultType = 'same';
+        break;
+      case 'less':
+        worthValue = 'Worth Less';
+        resultType = 'less';
+        break;
+      default:
+        return;
+    }
+    
+    setComparisonResult(resultType);
     
     // Update the data with the worth comparison
     if (selectedComp && onDataUpdate) {
@@ -118,8 +139,12 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
     return (
       <div className="text-center py-12">
         <Home className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Reference Property Found</h3>
-        <p className="text-gray-600">A property with status "EXP" is required for comparison.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Reference Property Set</h3>
+        <p className="text-gray-600 mb-4">Please select a reference property by clicking the star icon next to any property in the data table.</p>
+        <div className="flex items-center justify-center gap-2 text-yellow-600">
+          <Star className="w-5 h-5" />
+          <span className="text-sm">Click the star to set as reference property</span>
+        </div>
       </div>
     );
   }
@@ -130,32 +155,32 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Compare Properties</h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Click on any property card to see a detailed side-by-side comparison with the seller's home.
+          Click on any property card to see a detailed side-by-side comparison with the reference property.
         </p>
       </div>
 
       {/* Reference Property Summary */}
-      <div className="card bg-blue-50 border-blue-200">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
-          <Home className="w-5 h-5" />
-          Seller's Home (Reference Property)
+      <div className="card bg-yellow-50 border-yellow-200">
+        <h3 className="text-lg font-semibold text-yellow-900 mb-3 flex items-center gap-2">
+          <Star className="w-5 h-5 fill-current" />
+          Reference Property
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <span className="text-blue-700 font-medium">Address:</span>
-            <p className="text-blue-900">{referenceProperty['Address']}</p>
+            <span className="text-yellow-700 font-medium">Address:</span>
+            <p className="text-yellow-900">{referenceProperty['Address']}</p>
           </div>
           <div>
-            <span className="text-blue-700 font-medium">List Price:</span>
-            <p className="text-blue-900">{formatValue(referenceProperty['List Price'], 'List Price')}</p>
+            <span className="text-yellow-700 font-medium">List Price:</span>
+            <p className="text-yellow-900">{formatValue(referenceProperty['List Price'], 'List Price')}</p>
           </div>
           <div>
-            <span className="text-blue-700 font-medium">Square Feet:</span>
-            <p className="text-blue-900">{formatValue(referenceProperty['Above Grade Finished SQFT'], 'Above Grade Finished SQFT')}</p>
+            <span className="text-yellow-700 font-medium">Square Feet:</span>
+            <p className="text-yellow-900">{formatValue(referenceProperty['Above Grade Finished SQFT'], 'Above Grade Finished SQFT')}</p>
           </div>
           <div>
-            <span className="text-blue-700 font-medium">Beds/Baths:</span>
-            <p className="text-blue-900">{referenceProperty['Beds']} bed, {referenceProperty['Baths']} bath</p>
+            <span className="text-yellow-700 font-medium">Beds/Baths:</span>
+            <p className="text-yellow-900">{referenceProperty['Beds']} bed, {referenceProperty['Baths']} bath</p>
           </div>
         </div>
       </div>
@@ -233,6 +258,8 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                 <div className={`text-center pt-2 px-3 py-1 rounded-full text-sm font-medium ${
                   comp['Worth Comparison'] === 'Worth More' 
                     ? 'bg-green-100 text-green-800' 
+                    : comp['Worth Comparison'] === 'About the Same'
+                    ? 'bg-blue-100 text-blue-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
                   {comp['Worth Comparison']}
@@ -267,8 +294,8 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                 {/* Reference Property Zillow */}
                 <div>
                   <h4 className="text-lg font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Home className="w-5 h-5" />
-                    Seller's Home - {referenceProperty['Address']}
+                    <Star className="w-5 h-5 fill-current text-yellow-500" />
+                    Reference Property - {referenceProperty['Address']}
                   </h4>
                   {referenceProperty['Zillow Link'] ? (
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -380,11 +407,11 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
               <div className="border-t border-gray-200 pt-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Worth Comparison</h4>
                 <p className="text-gray-600 mb-4">
-                  Based on your analysis, is the selected property worth more or less than the seller's home?
+                  Based on your analysis, is the selected property worth more, about the same, or less than the reference property?
                 </p>
                 <div className="flex gap-4">
                   <button
-                    onClick={() => handleWorthComparison(true)}
+                    onClick={() => handleWorthComparison('more')}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                       comparisonResult === 'more'
                         ? 'bg-green-100 text-green-800 border-2 border-green-300'
@@ -395,7 +422,18 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                     Worth More
                   </button>
                   <button
-                    onClick={() => handleWorthComparison(false)}
+                    onClick={() => handleWorthComparison('same')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                      comparisonResult === 'same'
+                        ? 'bg-blue-100 text-blue-800 border-2 border-blue-300'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Minus className="w-5 h-5" />
+                    About the Same
+                  </button>
+                  <button
+                    onClick={() => handleWorthComparison('less')}
                     className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
                       comparisonResult === 'less'
                         ? 'bg-red-100 text-red-800 border-2 border-red-300'
@@ -409,7 +447,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate }) => {
                 {comparisonResult && (
                   <div className="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
                     <p className="text-blue-800 font-medium">
-                      You selected: The selected property is worth {comparisonResult === 'more' ? 'more' : 'less'} than the seller's home.
+                      You selected: The selected property is worth {comparisonResult === 'more' ? 'more' : comparisonResult === 'same' ? 'about the same as' : 'less'} than the reference property.
                     </p>
                   </div>
                 )}

@@ -61,34 +61,41 @@ export const processCSVData = (csvText) => {
   });
 };
 
-export const calculateComparisons = (data) => {
+export const calculateComparisons = (data, referencePropertyId = null) => {
   if (data.length === 0) return data;
 
-  // Find the EXP property to use as reference
-  const expProperty = data.find(prop => prop['Status'] === 'EXP');
+  // Find the reference property (either by ID or fallback to EXP)
+  let referenceProperty = null;
   
-  if (!expProperty) {
-    console.warn('No EXP property found in data. Skipping comparison calculations.');
+  if (referencePropertyId) {
+    referenceProperty = data.find(prop => prop['MLS #'] === referencePropertyId);
+  } else {
+    // Fallback to EXP property for backward compatibility
+    referenceProperty = data.find(prop => prop['Status'] === 'EXP');
+  }
+  
+  if (!referenceProperty) {
+    console.warn('No reference property found. Skipping comparison calculations.');
     return data;
   }
 
-  console.log('Using EXP property as reference:', expProperty['Address']);
+  console.log('Using reference property:', referenceProperty['Address']);
 
   return data.map(property => {
-    const sqftDiff = (property['Above Grade Finished SQFT'] || 0) - (expProperty['Above Grade Finished SQFT'] || 0);
-    const lotDiff = parseLotSize(property['Acres/Lot SF']) - parseLotSize(expProperty['Acres/Lot SF']);
+    const sqftDiff = (property['Above Grade Finished SQFT'] || 0) - (referenceProperty['Above Grade Finished SQFT'] || 0);
+    const lotDiff = parseLotSize(property['Acres/Lot SF']) - parseLotSize(referenceProperty['Acres/Lot SF']);
     
     return {
       ...property,
       'Sq Ft Difference vs EXP': sqftDiff,
       'Lot Difference vs EXP': lotDiff,
-      'Price vs EXP': property['List Price'] && expProperty['List Price'] 
-        ? property['List Price'] - expProperty['List Price']
+      'Price vs EXP': property['List Price'] && referenceProperty['List Price'] 
+        ? property['List Price'] - referenceProperty['List Price']
         : null,
-      'Price vs EXP %': property['List Price'] && expProperty['List Price']
-        ? ((property['List Price'] - expProperty['List Price']) / expProperty['List Price'] * 100).toFixed(2)
+      'Price vs EXP %': property['List Price'] && referenceProperty['List Price']
+        ? ((property['List Price'] - referenceProperty['List Price']) / referenceProperty['List Price'] * 100).toFixed(2)
         : null,
-      'Is Reference Property': property['Status'] === 'EXP',
+      'Is Reference Property': property['MLS #'] === referenceProperty['MLS #'],
     };
   });
 };

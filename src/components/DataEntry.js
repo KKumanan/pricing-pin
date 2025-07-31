@@ -664,6 +664,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
                         >
                           <option value="Not Set">Not Set</option>
                           <option value="Worth More">Worth More</option>
+                          <option value="About the Same">About the Same</option>
                           <option value="Worth Less">Worth Less</option>
                         </select>
                       </div>

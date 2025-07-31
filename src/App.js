@@ -6,7 +6,7 @@ import DataEntry from './components/DataEntry';
 import SessionManager from './components/SessionManager';
 import { processCSVData, calculateComparisons, generateSummaryStats, exportToCSV } from './utils/csvProcessor';
 import apiService from './utils/apiService';
-import { BarChart3, FileSpreadsheet, TrendingUp, Edit3, Database } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, TrendingUp, Edit3, Database, Star } from 'lucide-react';
 import CompareTab from './components/CompareTab';
 
 function App() {
@@ -20,6 +20,9 @@ function App() {
   const [currentSessionName, setCurrentSessionName] = useState(null);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveForm, setSaveForm] = useState({ name: '', description: '' });
+  const [starredPropertyId, setStarredPropertyId] = useState(null);
+  const [showStarConfirmModal, setShowStarConfirmModal] = useState(false);
+  const [pendingStarProperty, setPendingStarProperty] = useState(null);
 
   const handleFileUpload = async (file) => {
     setIsLoading(true);
@@ -29,13 +32,14 @@ function App() {
       const text = await file.text();
       const parsedData = await processCSVData(text);
       
-      // Perform calculations using EXP property as reference
-      const calculatedData = calculateComparisons(parsedData);
+      // Perform calculations using starred property as reference (initially none)
+      const calculatedData = calculateComparisons(parsedData, null);
       const summaryStats = generateSummaryStats(calculatedData);
       
       setData(parsedData);
       setProcessedData(calculatedData);
       setStats(summaryStats);
+      setStarredPropertyId(null); // Reset starred property when loading new data
       setCurrentSessionId(null); // Clear current session when uploading new file
       setCurrentSessionName(null);
       setActiveTab('data');
@@ -81,6 +85,8 @@ function App() {
     setCurrentSessionId(sessionId);
     setCurrentSessionName(sessionName);
     setActiveTab('data');
+    // Reset starred property when loading a session
+    setStarredPropertyId(null);
   };
 
   const handleSaveSuccess = () => {
@@ -119,6 +125,66 @@ function App() {
       setError('Failed to save session');
       console.error('Error saving session:', err);
     }
+  };
+
+  const handleStarProperty = (propertyId) => {
+    // If clicking on already starred property, unstar it
+    if (starredPropertyId === propertyId) {
+      setStarredPropertyId(null);
+      
+      // Recalculate comparisons with no reference property
+      const recalculatedData = calculateComparisons(data, null);
+      setProcessedData(recalculatedData);
+      
+      // Update stats
+      const updatedStats = generateSummaryStats(recalculatedData);
+      setStats(updatedStats);
+      
+      // Auto-save if working with a session
+      if (currentSessionId) {
+        handleDataUpdate(recalculatedData);
+      }
+      return;
+    }
+    
+    // Show confirmation modal for new star
+    const property = data.find(p => p['MLS #'] === propertyId);
+    setPendingStarProperty(property);
+    setShowStarConfirmModal(true);
+    
+    // If there's already a starred property, show additional warning
+    if (starredPropertyId) {
+      const currentStarredProperty = data.find(p => p['MLS #'] === starredPropertyId);
+      console.log(`Replacing reference property: ${currentStarredProperty['Address']} with ${property['Address']}`);
+    }
+  };
+
+  const confirmStarProperty = () => {
+    if (!pendingStarProperty) return;
+    
+    setStarredPropertyId(pendingStarProperty['MLS #']);
+    
+    // Recalculate comparisons with the new starred property
+    const recalculatedData = calculateComparisons(data, pendingStarProperty['MLS #']);
+    setProcessedData(recalculatedData);
+    
+    // Update stats
+    const updatedStats = generateSummaryStats(recalculatedData);
+    setStats(updatedStats);
+    
+    // Auto-save if working with a session
+    if (currentSessionId) {
+      handleDataUpdate(recalculatedData);
+    }
+    
+    // Close modal and reset pending property
+    setShowStarConfirmModal(false);
+    setPendingStarProperty(null);
+  };
+
+  const cancelStarProperty = () => {
+    setShowStarConfirmModal(false);
+    setPendingStarProperty(null);
   };
 
   const tabs = [
@@ -254,7 +320,13 @@ function App() {
                       </p>
                   </div>
                   
-                                                       <EditableDataTable data={processedData} onExport={handleExport} onDataUpdate={handleDataUpdate} />
+                                                       <EditableDataTable 
+                    data={processedData} 
+                    onExport={handleExport} 
+                    onDataUpdate={handleDataUpdate}
+                    starredPropertyId={starredPropertyId}
+                    onStarProperty={handleStarProperty}
+                  />
                 </div>
               )}
 
@@ -268,9 +340,11 @@ function App() {
 
               {activeTab === 'compare' && (
                 <CompareTab
-                  comps={processedData.filter(p => p['Status'] !== 'EXP')}
-                  referenceProperty={processedData.find(p => p['Status'] === 'EXP')}
+                  comps={processedData.filter(p => p['MLS #'] !== starredPropertyId)}
+                  referenceProperty={starredPropertyId ? processedData.find(p => p['MLS #'] === starredPropertyId) : null}
                   onDataUpdate={handleDataUpdate}
+                  starredPropertyId={starredPropertyId}
+                  onStarProperty={handleStarProperty}
                 />
               )}
 
@@ -337,6 +411,61 @@ function App() {
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Star Confirmation Modal */}
+      {showStarConfirmModal && pendingStarProperty && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 text-yellow-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Set Reference Property</h3>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-700 mb-3">
+                You are about to set this property as the reference for all comparisons:
+              </p>
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <p className="font-medium text-gray-900">{pendingStarProperty['Address']}</p>
+                <p className="text-sm text-gray-600">MLS: {pendingStarProperty['MLS #']}</p>
+                <p className="text-sm text-gray-600">
+                  {pendingStarProperty['List Price'] ? `$${pendingStarProperty['List Price'].toLocaleString()}` : 'No price'} • 
+                  {pendingStarProperty['Beds']} bed, {pendingStarProperty['Baths']} bath
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This will recalculate all comparison data (price differences, square footage differences, etc.) 
+                based on this property as the reference point.
+                {starredPropertyId && (
+                  <span className="block mt-1">
+                    <strong>Warning:</strong> This will replace the current reference property.
+                  </span>
+                )}
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelStarProperty}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmStarProperty}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+              >
+                Set as Reference
               </button>
             </div>
           </div>
