@@ -43,7 +43,7 @@ const SessionManager = ({
 
     try {
       const session = await apiService.getSession(sessionId);
-      onLoadSession(session.data, session.stats, session.id, session.name);
+      onLoadSession(session.data, session.stats, session.id, session.name, session.starredPropertyId);
     } catch (err) {
       setError('Failed to load session');
       console.error('Error loading session:', err);

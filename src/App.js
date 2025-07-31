@@ -68,7 +68,8 @@ function App() {
           name: currentSessionName,
           description: '', // Keep existing description
           data: updatedData,
-          stats: updatedStats
+          stats: updatedStats,
+          starredPropertyId: starredPropertyId
         });
         console.log('Session automatically updated in database');
       } catch (err) {
@@ -78,15 +79,15 @@ function App() {
     }
   };
 
-  const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null) => {
+  const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null, sessionStarredPropertyId = null) => {
     setData(sessionData);
     setProcessedData(sessionData);
     setStats(sessionStats);
     setCurrentSessionId(sessionId);
     setCurrentSessionName(sessionName);
     setActiveTab('data');
-    // Reset starred property when loading a session
-    setStarredPropertyId(null);
+    // Restore starred property from session
+    setStarredPropertyId(sessionStarredPropertyId);
   };
 
   const handleSaveSuccess = () => {
@@ -105,7 +106,8 @@ function App() {
         name: saveForm.name.trim(),
         description: saveForm.description.trim(),
         data: processedData,
-        stats: stats
+        stats: stats,
+        starredPropertyId: starredPropertyId
       };
 
       let result;

@@ -11,7 +11,7 @@ require('dotenv').config(); // For environment variable support
 // Backblaze B2 credentials (use environment variables for security)
 const B2_KEY_ID = process.env.B2_KEY_ID || '0050f4552dcab570000000001';
 const B2_APP_KEY = process.env.B2_APP_KEY || 'K005jwgio1jqZwiOMF2yPQvtEYYPnWk';
-const B2_BUCKET_ID = process.env.B2_BUCKET_ID || '';
+const B2_BUCKET_ID = process.env.B2_BUCKET_ID || '901fb475a5923d0c9a8b0517';
 
 const b2 = new B2({
   applicationKeyId: B2_KEY_ID,
@@ -42,6 +42,7 @@ db.serialize(() => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       data TEXT NOT NULL,
       stats TEXT,
+      starred_property_id TEXT,
       b2_file_name TEXT -- New column for B2 file reference
     )
   `);
@@ -95,24 +96,42 @@ app.get('/api/sessions/:id', async (req, res) => {
 
     try {
       let sessionData;
+      // Check if B2 is configured
+      if (!B2_BUCKET_ID) {
+        return res.status(500).json({ 
+          error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
+        });
+      }
+
       // If b2_file_name exists, fetch from B2
       if (row.b2_file_name) {
-        await b2.authorize();
-        // Download file by name
-        const fileResponse = await b2.downloadFileByName({
-          bucketName: process.env.B2_BUCKET_NAME, // You need to set this in your .env
-          fileName: row.b2_file_name,
-          responseType: 'text',
-        });
-        sessionData = JSON.parse(fileResponse.data);
+        try {
+          await b2.authorize();
+          // Download file by name
+          const fileResponse = await b2.downloadFileByName({
+            bucketName: process.env.B2_BUCKET_NAME, // You need to set this in your .env
+            fileName: row.b2_file_name,
+            responseType: 'text',
+          });
+          sessionData = JSON.parse(fileResponse.data);
+        } catch (b2Error) {
+          console.error('Failed to fetch from B2:', b2Error.message);
+          return res.status(500).json({ 
+            error: 'Failed to load session from Backblaze B2', 
+            details: b2Error.message 
+          });
+        }
       } else {
-        // Fallback to legacy data column
-        sessionData = JSON.parse(row.data);
+        return res.status(500).json({ 
+          error: 'Session data not found in Backblaze B2' 
+        });
       }
+      
       const session = {
         ...row,
         data: sessionData,
-        stats: row.stats ? JSON.parse(row.stats) : null
+        stats: row.stats ? JSON.parse(row.stats) : null,
+        starredPropertyId: row.starred_property_id
       };
       res.json(session);
     } catch (err) {
@@ -124,10 +143,17 @@ app.get('/api/sessions/:id', async (req, res) => {
 
 // Save a new CSV session
 app.post('/api/sessions', async (req, res) => {
-  const { name, description, data, stats } = req.body;
+  const { name, description, data, stats, starredPropertyId } = req.body;
 
   if (!name || !data) {
     return res.status(400).json({ error: 'Name and data are required' });
+  }
+
+  // Check if B2 is properly configured
+  if (!B2_BUCKET_ID) {
+    return res.status(500).json({ 
+      error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
+    });
   }
 
   try {
@@ -154,11 +180,11 @@ app.post('/api/sessions', async (req, res) => {
 
     // 5. Store metadata in SQLite (leave data column empty or '{}')
     const query = `
-      INSERT INTO csv_sessions (name, description, data, stats, b2_file_name, updated_at)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO csv_sessions (name, description, data, stats, starred_property_id, b2_file_name, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `;
     const statsJson = stats ? JSON.stringify(stats) : null;
-    db.run(query, [name, description, '{}', statsJson, fileName], function(err) {
+    db.run(query, [name, description, '{}', statsJson, starredPropertyId || null, fileName], function(err) {
       if (err) {
         console.error('Error saving session:', err);
         return res.status(500).json({ error: 'Failed to save session' });
@@ -178,10 +204,17 @@ app.post('/api/sessions', async (req, res) => {
 // Update an existing CSV session
 app.put('/api/sessions/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, description, data, stats } = req.body;
+  const { name, description, data, stats, starredPropertyId } = req.body;
 
   if (!name || !data) {
     return res.status(400).json({ error: 'Name and data are required' });
+  }
+
+  // Check if B2 is properly configured
+  if (!B2_BUCKET_ID) {
+    return res.status(500).json({ 
+      error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
+    });
   }
 
   const selectQuery = 'SELECT * FROM csv_sessions WHERE id = ?';
@@ -193,6 +226,7 @@ app.put('/api/sessions/:id', async (req, res) => {
     if (!row) {
       return res.status(404).json({ error: 'Session not found' });
     }
+    
     try {
       let b2FileName = row.b2_file_name;
       if (b2FileName) {
@@ -213,12 +247,12 @@ app.put('/api/sessions/:id', async (req, res) => {
       // Update metadata in SQLite
       const query = `
         UPDATE csv_sessions 
-        SET name = ?, description = ?, data = ?, stats = ?, updated_at = CURRENT_TIMESTAMP
+        SET name = ?, description = ?, data = ?, stats = ?, starred_property_id = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `;
       const dataJson = b2FileName ? '{}' : JSON.stringify(data);
       const statsJson = stats ? JSON.stringify(stats) : null;
-      db.run(query, [name, description, dataJson, statsJson, id], function(err) {
+      db.run(query, [name, description, dataJson, statsJson, starredPropertyId || null, id], function(err) {
         if (err) {
           console.error('Error updating session:', err);
           return res.status(500).json({ error: 'Failed to update session' });
