@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/index.js"
+    }
+  ],
+  "env": {
+    "B2_KEY_ID": "@b2-key-id",
+    "B2_APP_KEY": "@b2-app-key", 
+    "B2_BUCKET_ID": "@b2-bucket-id",
+    "B2_BUCKET_NAME": "@b2-bucket-name"
+  }
+} 

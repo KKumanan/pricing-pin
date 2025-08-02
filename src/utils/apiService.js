@@ -2,7 +2,10 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 
 class ApiService {
   constructor() {
-    this.baseUrl = API_BASE_URL;
+    // Use environment variable for production, fallback to localhost for development
+    this.baseUrl = process.env.NODE_ENV === 'production' 
+      ? (process.env.REACT_APP_API_URL || 'https://your-backend-url.vercel.app/api')
+      : API_BASE_URL;
   }
 
   async request(endpoint, options = {}) {
