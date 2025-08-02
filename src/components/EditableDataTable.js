@@ -905,6 +905,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedData.map((row, rowIndex) => {
               const isStarredProperty = starredPropertyId === row['MLS #'];
+              if (rowIndex === 0) {
+                console.log('EditableDataTable starredPropertyId:', starredPropertyId, 'isStarredProperty for first row:', isStarredProperty);
+              }
               return (
                 <tr 
                   key={rowIndex} 

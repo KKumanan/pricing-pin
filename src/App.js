@@ -64,6 +64,7 @@ function App() {
     // If we're working with a loaded session, automatically save changes back to the database
     if (currentSessionId) {
       try {
+        console.log('Auto-saving session with starredPropertyId:', starredPropertyId);
         await apiService.updateSession(currentSessionId, {
           name: currentSessionName,
           description: '', // Keep existing description
@@ -80,14 +81,23 @@ function App() {
   };
 
   const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null, sessionStarredPropertyId = null) => {
+    console.log('Loading session with starredPropertyId:', sessionStarredPropertyId);
     setData(sessionData);
-    setProcessedData(sessionData);
-    setStats(sessionStats);
     setCurrentSessionId(sessionId);
     setCurrentSessionName(sessionName);
     setActiveTab('data');
     // Restore starred property from session
     setStarredPropertyId(sessionStarredPropertyId);
+    
+    // Recalculate processed data with the starred property
+    if (sessionStarredPropertyId) {
+      const recalculatedData = calculateComparisons(sessionData, sessionStarredPropertyId);
+      setProcessedData(recalculatedData);
+    } else {
+      setProcessedData(sessionData);
+    }
+    
+    setStats(sessionStats);
   };
 
   const handleSaveSuccess = () => {
@@ -109,6 +119,8 @@ function App() {
         stats: stats,
         starredPropertyId: starredPropertyId
       };
+      
+      console.log('Saving session with starredPropertyId:', starredPropertyId);
 
       let result;
       if (currentSessionId) {
@@ -341,13 +353,16 @@ function App() {
 
 
               {activeTab === 'compare' && (
-                <CompareTab
-                  comps={processedData.filter(p => p['MLS #'] !== starredPropertyId)}
-                  referenceProperty={starredPropertyId ? processedData.find(p => p['MLS #'] === starredPropertyId) : null}
-                  onDataUpdate={handleDataUpdate}
-                  starredPropertyId={starredPropertyId}
-                  onStarProperty={handleStarProperty}
-                />
+                <div>
+                  {console.log('CompareTab props:', { starredPropertyId, referenceProperty: starredPropertyId ? processedData.find(p => p['MLS #'] === starredPropertyId) : null })}
+                  <CompareTab
+                    comps={processedData.filter(p => p['MLS #'] !== starredPropertyId)}
+                    referenceProperty={starredPropertyId ? processedData.find(p => p['MLS #'] === starredPropertyId) : null}
+                    onDataUpdate={handleDataUpdate}
+                    starredPropertyId={starredPropertyId}
+                    onStarProperty={handleStarProperty}
+                  />
+                </div>
               )}
 
               {activeTab === 'sessions' && (

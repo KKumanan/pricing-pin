@@ -37,11 +37,14 @@ class ApiService {
 
   // Get a specific CSV session by ID
   async getSession(id) {
-    return this.request(`/sessions/${id}`);
+    const result = await this.request(`/sessions/${id}`);
+    console.log('Received session from server:', result);
+    return result;
   }
 
   // Save a new CSV session
   async saveSession(sessionData) {
+    console.log('Sending session data to server:', sessionData);
     return this.request('/sessions', {
       method: 'POST',
       body: JSON.stringify(sessionData),
@@ -50,6 +53,7 @@ class ApiService {
 
   // Update an existing CSV session
   async updateSession(id, sessionData) {
+    console.log('Sending update session data to server:', { id, sessionData });
     return this.request(`/sessions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(sessionData),
