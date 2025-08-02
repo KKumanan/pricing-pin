@@ -4,9 +4,10 @@ import DataTable from './components/DataTable';
 import EditableDataTable from './components/EditableDataTable';
 import DataEntry from './components/DataEntry';
 import SessionManager from './components/SessionManager';
+import MergeCSV from './components/MergeCSV';
 import { processCSVData, calculateComparisons, generateSummaryStats, exportToCSV } from './utils/csvProcessor';
 import apiService from './utils/apiService';
-import { BarChart3, FileSpreadsheet, TrendingUp, Edit3, Database, Star } from 'lucide-react';
+import { BarChart3, FileSpreadsheet, TrendingUp, Edit3, Database, Star, GitMerge } from 'lucide-react';
 import CompareTab from './components/CompareTab';
 
 function App() {
@@ -47,6 +48,72 @@ function App() {
     } catch (err) {
       setError(err.message);
       console.error('Error processing file:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMergeCSV = async (file) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const text = await file.text();
+      const newData = await processCSVData(text);
+      
+      // Get existing addresses to check for duplicates
+      const existingAddresses = new Set(data.map(item => item.Address?.toLowerCase().trim()));
+      
+      // Filter out properties that already exist (same address)
+      const uniqueNewData = newData.filter(item => {
+        const address = item.Address?.toLowerCase().trim();
+        return address && !existingAddresses.has(address);
+      });
+      
+      if (uniqueNewData.length === 0) {
+        setError('No new properties found. All addresses already exist in the current session.');
+        return;
+      }
+      
+      // Merge new data with existing data
+      const mergedData = [...data, ...uniqueNewData];
+      
+      // Recalculate with current starred property
+      const recalculatedData = calculateComparisons(mergedData, starredPropertyId);
+      const updatedStats = generateSummaryStats(recalculatedData);
+      
+      setData(mergedData);
+      setProcessedData(recalculatedData);
+      setStats(updatedStats);
+      
+      // Auto-save if we're working with a session
+      if (currentSessionId) {
+        try {
+          await apiService.updateSession(currentSessionId, {
+            name: currentSessionName,
+            description: '', // Keep existing description
+            data: recalculatedData,
+            stats: updatedStats,
+            starredPropertyId: starredPropertyId
+          });
+          console.log('Session automatically updated with merged data');
+        } catch (err) {
+          console.error('Failed to auto-save merged session:', err);
+        }
+      }
+      
+      // Show success message
+      const addedCount = uniqueNewData.length;
+      const skippedCount = newData.length - uniqueNewData.length;
+      setError(null);
+      alert(`Successfully merged CSV data!\n\nAdded: ${addedCount} new properties\nSkipped: ${skippedCount} duplicate addresses`);
+      
+      // Automatically navigate to data table page
+      setActiveTab('data');
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error merging CSV data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -205,6 +272,7 @@ function App() {
     { id: 'data', label: 'Data Table', icon: FileSpreadsheet },
     { id: 'data-entry', label: 'Data Entry', icon: Edit3 },
     { id: 'compare', label: 'Compare', icon: TrendingUp },
+    { id: 'merge', label: 'Merge CSV', icon: GitMerge },
     { id: 'sessions', label: 'Saved Sessions', icon: Database },
   ];
 
@@ -325,27 +393,53 @@ function App() {
             <div className="animate-fade-in">
               {activeTab === 'data' && (
                 <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                        Property Data
-                      </h2>
-                      <p className="text-gray-600">
-                        Detailed view of all properties with sorting and filtering capabilities
-                      </p>
-                  </div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                          Property Data
+                        </h2>
+                        <p className="text-gray-600">
+                          Detailed view of all properties with sorting and filtering capabilities
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab('merge')}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        <GitMerge className="w-4 h-4" />
+                        <span>Merge CSV</span>
+                      </button>
+                    </div>
                   
-                                                       <EditableDataTable 
-                    data={processedData} 
-                    onExport={handleExport} 
-                    onDataUpdate={handleDataUpdate}
-                    starredPropertyId={starredPropertyId}
-                    onStarProperty={handleStarProperty}
-                  />
+                    <EditableDataTable 
+                      data={processedData} 
+                      onExport={handleExport} 
+                      onDataUpdate={handleDataUpdate}
+                      starredPropertyId={starredPropertyId}
+                      onStarProperty={handleStarProperty}
+                    />
                 </div>
               )}
 
               {activeTab === 'data-entry' && (
                 <div className="space-y-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Data Entry
+                      </h2>
+                      <p className="text-gray-600">
+                        Edit property details and view individual property information
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('merge')}
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <GitMerge className="w-4 h-4" />
+                      <span>Merge CSV</span>
+                    </button>
+                  </div>
                   <DataEntry data={processedData} onDataUpdate={handleDataUpdate} />
                 </div>
               )}
@@ -353,7 +447,24 @@ function App() {
 
 
               {activeTab === 'compare' && (
-                <div>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Property Comparison
+                      </h2>
+                      <p className="text-gray-600">
+                        Compare properties against your reference property
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('merge')}
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <GitMerge className="w-4 h-4" />
+                      <span>Merge CSV</span>
+                    </button>
+                  </div>
                   {console.log('CompareTab props:', { starredPropertyId, referenceProperty: starredPropertyId ? processedData.find(p => p['MLS #'] === starredPropertyId) : null })}
                   <CompareTab
                     comps={processedData.filter(p => p['MLS #'] !== starredPropertyId)}
@@ -361,6 +472,25 @@ function App() {
                     onDataUpdate={handleDataUpdate}
                     starredPropertyId={starredPropertyId}
                     onStarProperty={handleStarProperty}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'merge' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      Merge Additional CSV Data
+                    </h2>
+                    <p className="text-gray-600">
+                      Add new properties from another CSV file to your current session
+                    </p>
+                  </div>
+                  
+                  <MergeCSV 
+                    onMergeCSV={handleMergeCSV}
+                    isLoading={isLoading}
+                    hasExistingData={data.length > 0}
                   />
                 </div>
               )}

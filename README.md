@@ -8,7 +8,8 @@ A modern web application for analyzing real estate CSV data with advanced featur
 - **Interactive Data Tables**: View and edit data with sorting and filtering
 - **Market Analysis**: Comprehensive analytics and insights
 - **Data Export**: Export processed data to CSV format
-- **Session Management**: Save and load analysis sessions using SQLite database
+- **Session Management**: Save and load analysis sessions using B2 Backblaze cloud storage
+- **CSV Merging**: Add additional CSV data to existing sessions with duplicate detection
 - **Real-time Statistics**: Dynamic calculation of market metrics
 
 ## Database Features
@@ -58,6 +59,18 @@ This will start both the React frontend (port 3000) and the Express backend serv
 3. **Name Your Session**: Provide a name and optional description
 4. **Load Sessions**: View and load previously saved sessions
 5. **Manage Sessions**: Delete unwanted sessions as needed
+
+### Using CSV Merging
+
+1. **Load Existing Session**: Load a session with existing data
+2. **Navigate to Merge Tab**: Click on the "Merge CSV" tab
+3. **Upload Additional CSV**: Select a new CSV file to merge
+4. **Automatic Processing**: The system will:
+   - Detect duplicate addresses and skip them
+   - Add only new properties with unique addresses
+   - Preserve existing data and starred properties
+   - Recalculate all comparisons and statistics
+5. **Review Results**: Check the summary showing added and skipped properties
 
 ### Database Configuration
 

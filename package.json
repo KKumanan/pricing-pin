@@ -10,7 +10,8 @@
     "eject": "react-scripts eject",
     "server": "node server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run start\"",
-    "test-b2": "node test-b2-connection.js"
+    "test-b2": "node test-b2-connection.js",
+    "test-merge": "node test-merge-functionality.js"
   },
   "dependencies": {
     "autoprefixer": "^10.4.16",
