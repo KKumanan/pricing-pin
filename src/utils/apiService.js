@@ -4,7 +4,7 @@ class ApiService {
   constructor() {
     // Use environment variable for production, fallback to localhost for development
     this.baseUrl = process.env.NODE_ENV === 'production' 
-      ? (process.env.REACT_APP_API_URL || 'https://your-backend-url.vercel.app/api')
+      ? (process.env.REACT_APP_API_URL || '/api')
       : API_BASE_URL;
   }
 
