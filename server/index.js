@@ -5,7 +5,7 @@ const path = require('path');
 
 // Backblaze B2 SDK setup
 const B2 = require('backblaze-b2');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') }); // Load .env from parent directory
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Backblaze B2 credentials (use environment variables for security)
 const B2_KEY_ID = process.env.B2_KEY_ID || '0050f4552dcab570000000001';
@@ -32,244 +32,408 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
-// In-memory storage for session metadata (in production, you'd use a proper database)
-let sessions = [];
-let nextSessionId = 1;
-
-// API Routes
-
-// Get all CSV sessions
-app.get('/api/sessions', (req, res) => {
-  try {
-    const sessionsList = sessions.map(session => ({
-      id: session.id,
-      name: session.name,
-      description: session.description,
-      created_at: session.created_at,
-      updated_at: session.updated_at,
-      stats: session.stats
-    }));
-    
-    res.json(sessionsList);
-  } catch (err) {
-    console.error('Error fetching sessions:', err);
-    res.status(500).json({ error: 'Failed to fetch sessions' });
+// B2 Database Architecture
+class B2Database {
+  constructor() {
+    this.b2 = b2;
+    this.bucketId = B2_BUCKET_ID;
+    this.bucketName = B2_BUCKET_NAME;
+    this.sessionsIndexFile = 'sessions-index.json';
+    this.isAuthorized = false;
   }
-});
 
-// Get a specific CSV session by ID
-app.get('/api/sessions/:id', async (req, res) => {
-  const { id } = req.params;
-  
-  try {
-    // Check if B2 is properly configured
-    if (!B2_BUCKET_ID) {
-      return res.status(500).json({ 
-        error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
-      });
+  async authorize() {
+    if (!this.isAuthorized) {
+      await this.b2.authorize();
+      this.isAuthorized = true;
     }
+  }
 
-    const session = sessions.find(s => s.id == id);
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+  // Initialize the database by creating the sessions index if it doesn't exist
+  async initialize() {
+    try {
+      await this.authorize();
+      
+      // Check if sessions index exists
+      try {
+        await this.b2.downloadFileByName({
+          bucketName: this.bucketName,
+          fileName: this.sessionsIndexFile,
+          responseType: 'text'
+        });
+      } catch (error) {
+        // Sessions index doesn't exist, create it
+        console.log('Creating sessions index file...');
+        await this.createSessionsIndex();
+      }
+      
+      console.log('B2 Database initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize B2 Database:', error);
+      throw error;
     }
+  }
 
-    // Download session data from B2
-    await b2.authorize();
-    const fileResponse = await b2.downloadFileByName({
-      bucketName: B2_BUCKET_NAME,
-      fileName: session.b2_file_name,
-      responseType: 'text',
-    });
-    
-    const sessionData = JSON.parse(fileResponse.data);
-    
-    const fullSession = {
-      ...session,
-      data: sessionData,
-      starredPropertyId: session.starredPropertyId
+  // Create the sessions index file
+  async createSessionsIndex() {
+    const sessionsIndex = {
+      sessions: [],
+      nextId: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+
+    await this.uploadFile(this.sessionsIndexFile, sessionsIndex);
+  }
+
+  // Upload a file to B2
+  async uploadFile(fileName, data) {
+    await this.authorize();
     
-    console.log('Returning session with starredPropertyId:', session.starredPropertyId);
-    res.json(fullSession);
-  } catch (err) {
-    console.error('Error loading session data:', err);
-    return res.status(500).json({ error: 'Failed to load session data', details: err && err.message ? err.message : err });
-  }
-});
-
-// Save a new CSV session
-app.post('/api/sessions', async (req, res) => {
-  const { name, description, data, stats, starredPropertyId } = req.body;
-
-  console.log('Received session data:', { name, description, starredPropertyId });
-
-  if (!name || !data) {
-    return res.status(400).json({ error: 'Name and data are required' });
-  }
-
-  // Check if B2 is properly configured
-  if (!B2_BUCKET_ID) {
-    return res.status(500).json({ 
-      error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
-    });
-  }
-
-  try {
-    // 1. Authorize with B2
-    await b2.authorize();
-
-    // 2. Get upload URL
-    const uploadUrlResponse = await b2.getUploadUrl({ bucketId: B2_BUCKET_ID });
+    const uploadUrlResponse = await this.b2.getUploadUrl({ bucketId: this.bucketId });
     const uploadUrl = uploadUrlResponse.data.uploadUrl;
     const uploadAuthToken = uploadUrlResponse.data.authorizationToken;
-
-    // 3. Prepare file data and name
-    const fileName = `session-${Date.now()}-${Math.random().toString(36).substring(2, 10)}.json`;
+    
     const fileData = Buffer.from(JSON.stringify(data), 'utf8');
-
-    // 4. Upload file to B2
-    await b2.uploadFile({
+    
+    await this.b2.uploadFile({
       uploadUrl,
       uploadAuthToken,
       fileName,
       data: fileData,
       mime: 'application/json'
     });
+  }
 
-    // 5. Store metadata in memory
-    const session = {
-      id: nextSessionId++,
+  // Download a file from B2
+  async downloadFile(fileName) {
+    await this.authorize();
+    
+    const response = await this.b2.downloadFileByName({
+      bucketName: this.bucketName,
+      fileName,
+      responseType: 'text'
+    });
+    
+    return JSON.parse(response.data);
+  }
+
+  // Get sessions index
+  async getSessionsIndex() {
+    try {
+      return await this.downloadFile(this.sessionsIndexFile);
+    } catch (error) {
+      console.error('Error getting sessions index:', error);
+      return { sessions: [], nextId: 1 };
+    }
+  }
+
+  // Update sessions index
+  async updateSessionsIndex(sessionsIndex) {
+    sessionsIndex.updated_at = new Date().toISOString();
+    await this.uploadFile(this.sessionsIndexFile, sessionsIndex);
+  }
+
+  // Get all sessions
+  async getAllSessions() {
+    const sessionsIndex = await this.getSessionsIndex();
+    return sessionsIndex.sessions.map(session => ({
+      id: session.id,
+      name: session.name,
+      description: session.description,
+      created_at: session.created_at,
+      updated_at: session.updated_at,
+      stats: session.stats,
+      starredPropertyId: session.starredPropertyId
+    }));
+  }
+
+  // Get a specific session
+  async getSession(id) {
+    const sessionsIndex = await this.getSessionsIndex();
+    const session = sessionsIndex.sessions.find(s => s.id == id);
+    
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    // Download session data
+    const sessionData = await this.downloadFile(session.dataFileName);
+    
+    return {
+      ...session,
+      data: sessionData
+    };
+  }
+
+  // Create a new session
+  async createSession(sessionData) {
+    const { name, description, data, stats, starredPropertyId } = sessionData;
+    
+    if (!name || !data) {
+      throw new Error('Name and data are required');
+    }
+
+    const sessionsIndex = await this.getSessionsIndex();
+    
+    // Generate unique file name for session data
+    const dataFileName = `session-data-${Date.now()}-${Math.random().toString(36).substring(2, 10)}.json`;
+    
+    // Upload session data
+    await this.uploadFile(dataFileName, data);
+    
+    // Create session metadata
+    const newSession = {
+      id: sessionsIndex.nextId++,
       name,
-      description,
+      description: description || '',
+      dataFileName,
       stats,
       starredPropertyId,
-      b2_file_name: fileName,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     
-    sessions.push(session);
+    // Add to sessions index
+    sessionsIndex.sessions.push(newSession);
+    await this.updateSessionsIndex(sessionsIndex);
     
-    console.log('Saving session with starredPropertyId:', starredPropertyId);
-    console.log('Session metadata:', session);
-    
-    res.json({
-      id: session.id,
+    return {
+      id: newSession.id,
       message: 'Session saved successfully',
-      b2_file_name: fileName
-    });
+      dataFileName
+    };
+  }
+
+  // Update an existing session
+  async updateSession(id, sessionData) {
+    const { name, description, data, stats, starredPropertyId } = sessionData;
+    
+    if (!name || !data) {
+      throw new Error('Name and data are required');
+    }
+
+    const sessionsIndex = await this.getSessionsIndex();
+    const sessionIndex = sessionsIndex.sessions.findIndex(s => s.id == id);
+    
+    if (sessionIndex === -1) {
+      throw new Error('Session not found');
+    }
+
+    const session = sessionsIndex.sessions[sessionIndex];
+    
+    // Update session data file
+    await this.uploadFile(session.dataFileName, data);
+    
+    // Update session metadata
+    sessionsIndex.sessions[sessionIndex] = {
+      ...session,
+      name,
+      description: description || session.description,
+      stats,
+      starredPropertyId,
+      updated_at: new Date().toISOString()
+    };
+    
+    await this.updateSessionsIndex(sessionsIndex);
+    
+    return {
+      message: 'Session updated successfully'
+    };
+  }
+
+  // Delete a session
+  async deleteSession(id) {
+    const sessionsIndex = await this.getSessionsIndex();
+    const sessionIndex = sessionsIndex.sessions.findIndex(s => s.id == id);
+    
+    if (sessionIndex === -1) {
+      throw new Error('Session not found');
+    }
+
+    const session = sessionsIndex.sessions[sessionIndex];
+    
+    try {
+      // Delete session data file from B2
+      const fileVersions = await this.b2.listFileVersions({
+        bucketId: this.bucketId,
+        startFileName: session.dataFileName,
+        maxFileCount: 1
+      });
+      
+      const file = fileVersions.data.files.find(f => f.fileName === session.dataFileName);
+      if (file) {
+        await this.b2.deleteFileVersion({
+          fileId: file.fileId,
+          fileName: session.dataFileName
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting session data file:', error);
+      // Continue with deletion even if file deletion fails
+    }
+    
+    // Remove from sessions index
+    sessionsIndex.sessions.splice(sessionIndex, 1);
+    await this.updateSessionsIndex(sessionsIndex);
+    
+    return {
+      message: 'Session deleted successfully'
+    };
+  }
+
+  // Backup sessions index
+  async backupSessionsIndex() {
+    const sessionsIndex = await this.getSessionsIndex();
+    const backupFileName = `backup-sessions-index-${Date.now()}.json`;
+    await this.uploadFile(backupFileName, sessionsIndex);
+    return backupFileName;
+  }
+
+  // Restore sessions index from backup
+  async restoreSessionsIndex(backupFileName) {
+    const backupData = await this.downloadFile(backupFileName);
+    await this.updateSessionsIndex(backupData);
+    return backupData;
+  }
+}
+
+// Initialize B2 Database
+const b2db = new B2Database();
+
+// Initialize database on startup
+b2db.initialize().catch(console.error);
+
+// API Routes
+
+// Get all sessions
+app.get('/api/sessions', async (req, res) => {
+  try {
+    const sessions = await b2db.getAllSessions();
+    res.json(sessions);
   } catch (err) {
-    console.error('Error uploading to B2 or saving session:', err);
-    return res.status(500).json({ error: 'Failed to save session to B2', details: err && err.message ? err.message : err });
+    console.error('Error fetching sessions:', err);
+    res.status(500).json({ error: 'Failed to fetch sessions', details: err.message });
   }
 });
 
-// Update an existing CSV session
+// Get a specific session by ID
+app.get('/api/sessions/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const session = await b2db.getSession(id);
+    res.json(session);
+  } catch (err) {
+    console.error('Error loading session:', err);
+    if (err.message === 'Session not found') {
+      res.status(404).json({ error: 'Session not found' });
+    } else {
+      res.status(500).json({ error: 'Failed to load session', details: err.message });
+    }
+  }
+});
+
+// Save a new session
+app.post('/api/sessions', async (req, res) => {
+  const { name, description, data, stats, starredPropertyId } = req.body;
+
+  console.log('Received session data:', { name, description, starredPropertyId });
+
+  try {
+    const result = await b2db.createSession({
+      name,
+      description,
+      data,
+      stats,
+      starredPropertyId
+    });
+    
+    console.log('Session saved with starredPropertyId:', starredPropertyId);
+    res.json(result);
+  } catch (err) {
+    console.error('Error saving session:', err);
+    res.status(500).json({ error: 'Failed to save session', details: err.message });
+  }
+});
+
+// Update an existing session
 app.put('/api/sessions/:id', async (req, res) => {
   const { id } = req.params;
   const { name, description, data, stats, starredPropertyId } = req.body;
 
   console.log('Updating session data:', { id, name, description, starredPropertyId });
 
-  if (!name || !data) {
-    return res.status(400).json({ error: 'Name and data are required' });
-  }
-
-  // Check if B2 is properly configured
-  if (!B2_BUCKET_ID) {
-    return res.status(500).json({ 
-      error: 'Backblaze B2 not configured. Please set B2_BUCKET_ID environment variable.' 
-    });
-  }
-
-  const sessionIndex = sessions.findIndex(s => s.id == id);
-  if (sessionIndex === -1) {
-    return res.status(404).json({ error: 'Session not found' });
-  }
-
-  const session = sessions[sessionIndex];
-  
   try {
-    // Update file in B2
-    await b2.authorize();
-    const uploadUrlResponse = await b2.getUploadUrl({ bucketId: B2_BUCKET_ID });
-    const uploadUrl = uploadUrlResponse.data.uploadUrl;
-    const uploadAuthToken = uploadUrlResponse.data.authorizationToken;
-    const fileData = Buffer.from(JSON.stringify(data), 'utf8');
-    
-    await b2.uploadFile({
-      uploadUrl,
-      uploadAuthToken,
-      fileName: session.b2_file_name,
-      data: fileData,
-      mime: 'application/json'
-    });
-
-    // Update metadata in memory
-    sessions[sessionIndex] = {
-      ...session,
+    const result = await b2db.updateSession(id, {
       name,
       description,
+      data,
       stats,
-      starredPropertyId,
-      updated_at: new Date().toISOString()
-    };
-    
-    console.log('Updating session with starredPropertyId:', starredPropertyId);
-    console.log('Updated session metadata:', sessions[sessionIndex]);
-    
-    res.json({
-      message: 'Session updated successfully'
+      starredPropertyId
     });
+    
+    console.log('Session updated with starredPropertyId:', starredPropertyId);
+    res.json(result);
   } catch (err) {
-    console.error('Error updating session or B2 file:', err);
-    return res.status(500).json({ error: 'Failed to update session or B2 file', details: err && err.message ? err.message : err });
+    console.error('Error updating session:', err);
+    if (err.message === 'Session not found') {
+      res.status(404).json({ error: 'Session not found' });
+    } else {
+      res.status(500).json({ error: 'Failed to update session', details: err.message });
+    }
   }
 });
 
-// Delete a CSV session
+// Delete a session
 app.delete('/api/sessions/:id', async (req, res) => {
   const { id } = req.params;
 
-  const sessionIndex = sessions.findIndex(s => s.id == id);
-  if (sessionIndex === -1) {
-    return res.status(404).json({ error: 'Session not found' });
-  }
-
-  const session = sessions[sessionIndex];
-
   try {
-    if (session.b2_file_name) {
-      await b2.authorize();
-      // Find fileId for the file to delete
-      const fileVersions = await b2.listFileVersions({
-        bucketId: B2_BUCKET_ID,
-        startFileName: session.b2_file_name,
-        maxFileCount: 1
-      });
-      const file = fileVersions.data.files.find(f => f.fileName === session.b2_file_name);
-      if (file) {
-        await b2.deleteFileVersion({
-          fileId: file.fileId,
-          fileName: session.b2_file_name
-        });
-      }
-    }
-    
-    // Remove from memory
-    sessions.splice(sessionIndex, 1);
-    
-    res.json({ message: 'Session deleted successfully' });
+    const result = await b2db.deleteSession(id);
+    res.json(result);
   } catch (err) {
     console.error('Error deleting session:', err);
-    return res.status(500).json({ error: 'Failed to delete session', details: err && err.message ? err.message : err });
+    if (err.message === 'Session not found') {
+      res.status(404).json({ error: 'Session not found' });
+    } else {
+      res.status(500).json({ error: 'Failed to delete session', details: err.message });
+    }
+  }
+});
+
+// Backup sessions index
+app.post('/api/backup', async (req, res) => {
+  try {
+    const backupFileName = await b2db.backupSessionsIndex();
+    res.json({ message: 'Backup created successfully', backupFileName });
+  } catch (err) {
+    console.error('Error creating backup:', err);
+    res.status(500).json({ error: 'Failed to create backup', details: err.message });
+  }
+});
+
+// Restore sessions index from backup
+app.post('/api/restore/:backupFileName', async (req, res) => {
+  const { backupFileName } = req.params;
+  
+  try {
+    const restoredData = await b2db.restoreSessionsIndex(backupFileName);
+    res.json({ message: 'Backup restored successfully', restoredData });
+  } catch (err) {
+    console.error('Error restoring backup:', err);
+    res.status(500).json({ error: 'Failed to restore backup', details: err.message });
   }
 });
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    b2Configured: !!(B2_BUCKET_ID && B2_BUCKET_NAME),
+    databaseType: 'B2 Backblaze'
+  });
 });
 
 // Start server
@@ -277,4 +441,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`B2 Bucket ID: ${B2_BUCKET_ID ? 'Configured' : 'Not configured'}`);
   console.log(`B2 Bucket Name: ${B2_BUCKET_NAME ? 'Configured' : 'Not configured'}`);
+  console.log('Database Architecture: B2 Backblaze (No SQLite)');
 }); 

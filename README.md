@@ -13,13 +13,15 @@ A modern web application for analyzing real estate CSV data with advanced featur
 
 ## Database Features
 
-The application now includes SQLite database functionality to save and manage your CSV analysis sessions:
+The application uses B2 Backblaze cloud storage for robust and scalable session management:
 
 - **Save Sessions**: Save your current analysis with a name and description
 - **Load Sessions**: Retrieve and load previously saved sessions
 - **Session History**: View all saved sessions with metadata
 - **Delete Sessions**: Remove unwanted sessions from the database
-- **Persistent Storage**: All sessions are stored locally in SQLite
+- **Cloud Storage**: All sessions are stored securely in B2 Backblaze
+- **Backup & Restore**: Automatic backup and restore functionality
+- **Scalable**: No local database files, fully cloud-based
 
 ## Installation
 
@@ -57,11 +59,16 @@ This will start both the React frontend (port 3000) and the Express backend serv
 4. **Load Sessions**: View and load previously saved sessions
 5. **Manage Sessions**: Delete unwanted sessions as needed
 
-### Database Location
+### Database Configuration
 
-The SQLite database file is automatically created at:
-```
-server/database.sqlite
+The application uses B2 Backblaze cloud storage. See `B2_SETUP.md` for detailed setup instructions.
+
+Required environment variables:
+```env
+B2_KEY_ID=your_b2_key_id
+B2_APP_KEY=your_b2_application_key
+B2_BUCKET_ID=your_b2_bucket_id
+B2_BUCKET_NAME=your_b2_bucket_name
 ```
 
 ## API Endpoints
@@ -77,19 +84,26 @@ The backend provides the following REST API endpoints:
 
 ## Data Structure
 
-### CSV Session Schema
+### B2 Session Schema
 
-```sql
-CREATE TABLE csv_sessions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  data TEXT NOT NULL,
-  stats TEXT
-);
+```json
+{
+  "id": 1,
+  "name": "Session Name",
+  "description": "Session Description",
+  "dataFileName": "session-data-1234567890-abc123.json",
+  "stats": { /* session statistics */ },
+  "starredPropertyId": "property-123",
+  "created_at": "2024-01-01T00:00:00.000Z",
+  "updated_at": "2024-01-01T00:00:00.000Z"
+}
 ```
+
+### B2 File Structure
+
+- `sessions-index.json` - Main index file containing session metadata
+- `session-data-{timestamp}-{random}.json` - Individual session data files
+- `backup-sessions-index-{timestamp}.json` - Backup files
 
 ## Development
 
@@ -106,8 +120,8 @@ pricing-pin/
 │   │   └── ...
 │   └── App.js                   # Main application component
 ├── server/
-│   └── index.js                 # Express.js backend server
-├── database.sqlite              # SQLite database (auto-created)
+│   └── index.js                 # Express.js backend server with B2 integration
+├── B2_SETUP.md                 # B2 Backblaze setup guide
 └── package.json
 ```
 
@@ -123,17 +137,16 @@ pricing-pin/
 ### Common Issues
 
 1. **Backend not starting**: Ensure port 3001 is available
-2. **Database errors**: Check file permissions for `server/database.sqlite`
+2. **B2 configuration errors**: Check environment variables and B2 credentials
 3. **CORS errors**: Verify the backend is running on the correct port
 4. **Session not saving**: Check browser console for API errors
+5. **B2 authentication errors**: Verify B2 credentials and bucket permissions
 
 ### Database Reset
 
 To reset the database (deletes all saved sessions):
-```bash
-rm server/database.sqlite
-npm run server
-```
+1. Delete the `sessions-index.json` file from your B2 bucket
+2. Restart the server - it will recreate the index automatically
 
 ## Contributing
 
