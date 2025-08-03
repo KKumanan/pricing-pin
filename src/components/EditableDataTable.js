@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus } from 'lucide-react';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [sortConfig, setSortConfig] = useState({ key: 'Status', direction: 'asc' });
@@ -40,13 +40,47 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'Rating', 'Good Comp'
   ]);
 
-  // Editable fields configuration
-  const editableFields = [
-    'Status Contractual', 'Long Text', 'Upgrades', 'Parking', 
-    'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'SUBDIVISION', 'LOT SQFT',
-    'Rating', 'Good Comp', 'Worth Comparison'
-  ];
+  // Editable fields configuration - now includes all fields
+  const editableFields = useMemo(() => {
+    if (localData.length === 0) return [];
+    return Object.keys(localData[0]);
+  }, [localData]);
+
+  // Function to add a new row
+  const addNewRow = () => {
+    if (localData.length === 0) return;
+    
+    // Create a new row with default values based on the first row structure
+    const firstRow = localData[0];
+    const newRow = {};
+    
+    // Copy all keys from the first row and set default values
+    Object.keys(firstRow).forEach(key => {
+      if (key === 'MLS #') {
+        // Generate a unique MLS number
+        const existingMlsNumbers = localData.map(row => row['MLS #']).filter(mls => mls);
+        const maxMls = Math.max(...existingMlsNumbers.map(mls => parseInt(mls) || 0), 0);
+        newRow[key] = (maxMls + 1).toString();
+      } else if (key === 'Rating') {
+        newRow[key] = 0;
+      } else if (key === 'Good Comp') {
+        newRow[key] = 'NO';
+      } else if (key === 'Worth Comparison') {
+        newRow[key] = 'Not Set';
+      } else {
+        newRow[key] = '';
+      }
+    });
+    
+    const updatedData = [newRow, ...localData];
+    setLocalData(updatedData);
+    if (onDataUpdate) {
+      onDataUpdate(updatedData);
+    }
+    
+    // Reset to first page to show the new row
+    setCurrentPage(1);
+  };
 
   // Update local data when props change
   React.useEffect(() => {
@@ -318,7 +352,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   }, [selectedColumns, hiddenColumns]);
 
   const startEditing = (rowIndex, column, value) => {
-    if (!editableFields.includes(column)) return;
+    // Allow editing of all fields except special ones that have their own UI
+    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison') return;
     
     setEditingCell({ rowIndex, column });
     setEditValue(value || '');
@@ -638,8 +673,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    // For editable fields, make them clickable
-    if (editableFields.includes(key)) {
+    // For editable fields, make them clickable (all fields except special ones)
+    if (!['Rating', 'Good Comp', 'Worth Comparison'].includes(key)) {
       return (
         <div 
           className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${
@@ -738,43 +773,18 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
             <Download className="w-4 h-4" />
             Export All Data
           </button>
+
+          <button
+            onClick={addNewRow}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Row
+          </button>
         </div>
       </div>
 
-      {/* Editable Fields Info */}
-      {showEditableInfo && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 relative">
-          <button
-            className="absolute top-2 right-2 text-blue-700 hover:text-blue-900"
-            onClick={() => setShowEditableInfo(false)}
-            aria-label="Close info box"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Editable Fields</h3>
-        <p className="text-sm text-blue-700 mb-2">
-            Click on any cell in these columns to edit: <strong>Status Contractual, Long Text, Upgrades, Parking, Upper Level Bedrooms, Upper Level Full Baths, Main Level Bedrooms, Main Level Full Baths, Lower Level Bedrooms, Lower Level Full Baths, Kitchen Exterior, 2 Story Family Room, Condition, Attached Garage Spaces, Detached Garage Spaces</strong>
-          </p>
-          <p className="text-sm text-blue-700 mb-2">
-            Click on stars in the <strong>Rating</strong> column to rate properties
-          </p>
-          <p className="text-sm text-blue-700 mb-2">
-            Click on <strong>Good Comp</strong> buttons to toggle between YES/NO
-          </p>
-                      <p className="text-sm text-blue-700 mb-2">
-              Click on <strong>Worth Comparison</strong> buttons to cycle through Not Set → Worth More → About the Same → Worth Less
-            </p>
-            <p className="text-sm text-blue-700 mb-2">
-              Click the <strong>star icon</strong> next to any property to set it as the reference property for comparisons
-            </p>
-        <div className="flex items-center gap-2 text-xs text-blue-600">
-          <div className="w-4 h-4 border border-gray-300 border-dashed rounded"></div>
-          <span>Empty editable field</span>
-          <div className="w-4 h-4 border border-gray-200 rounded ml-4"></div>
-          <span>Field with data</span>
-        </div>
-      </div>
-      )}
+
 
       {/* Filter Panel */}
       {showFilters && (
