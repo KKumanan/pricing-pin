@@ -11,7 +11,8 @@
     "server": "node server/index.js",
     "dev": "concurrently \"npm run server\" \"npm run start\"",
     "test-b2": "node test-b2-connection.js",
-    "test-merge": "node test-merge-functionality.js"
+    "test-merge": "node test-merge-functionality.js",
+    "vercel-build": "react-scripts build"
   },
   "dependencies": {
     "autoprefixer": "^10.4.16",

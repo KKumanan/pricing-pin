@@ -1,11 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
 
 // Backblaze B2 SDK setup
 const B2 = require('backblaze-b2');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+// Load environment variables (Vercel will provide these)
+try {
+  require('dotenv').config();
+} catch (error) {
+  console.log('No .env file found, using Vercel environment variables');
+}
 
 // Backblaze B2 credentials (use environment variables for security)
 const B2_KEY_ID = process.env.B2_KEY_ID || '0050f4552dcab570000000001';
