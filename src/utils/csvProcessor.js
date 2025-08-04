@@ -64,19 +64,24 @@ export const processCSVData = (csvText) => {
 export const calculateComparisons = (data, referencePropertyId = null) => {
   if (data.length === 0) return data;
 
-  // Find the reference property (either by ID or fallback to EXP)
+  // Find the reference property (only by ID, no fallback to EXP)
   let referenceProperty = null;
   
   if (referencePropertyId) {
     referenceProperty = data.find(prop => prop['MLS #'] === referencePropertyId);
-  } else {
-    // Fallback to EXP property for backward compatibility
-    referenceProperty = data.find(prop => prop['Status'] === 'EXP');
   }
   
+  // If no reference property is explicitly selected, return data with blank difference fields
   if (!referenceProperty) {
-    console.warn('No reference property found. Skipping comparison calculations.');
-    return data;
+    console.log('No subject property selected. Difference fields will be blank.');
+    return data.map(property => ({
+      ...property,
+      'Sq Ft Difference vs EXP': null,
+      'Lot Difference vs EXP': null,
+      'Price vs EXP': null,
+      'Price vs EXP %': null,
+      'Is Reference Property': false,
+    }));
   }
 
   console.log('Using reference property:', referenceProperty['Address']);

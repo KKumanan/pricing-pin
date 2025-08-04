@@ -352,8 +352,10 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   }, [selectedColumns, hiddenColumns]);
 
   const startEditing = (rowIndex, column, value) => {
-    // Allow editing of all fields except special ones that have their own UI
-    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison') return;
+    // Allow editing of all fields except special ones that have their own UI and calculated fields
+    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison' || 
+        column === 'Sq Ft Difference vs EXP' || column === 'Lot Difference vs EXP' ||
+        column === 'Price vs EXP' || column === 'Price vs EXP %' || column === 'Is Reference Property') return;
     
     setEditingCell({ rowIndex, column });
     setEditValue(value || '');
@@ -673,8 +675,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    // For editable fields, make them clickable (all fields except special ones)
-    if (!['Rating', 'Good Comp', 'Worth Comparison'].includes(key)) {
+    // For editable fields, make them clickable (all fields except special ones and calculated fields)
+    if (!['Rating', 'Good Comp', 'Worth Comparison', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
+           'Price vs EXP', 'Price vs EXP %', 'Is Reference Property'].includes(key)) {
       return (
         <div 
           className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${

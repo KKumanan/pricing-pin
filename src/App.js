@@ -124,6 +124,8 @@ function App() {
   };
 
   const handleDataUpdate = async (updatedData) => {
+    // Update both data and processedData to keep them in sync
+    setData(updatedData);
     setProcessedData(updatedData);
     const updatedStats = generateSummaryStats(updatedData);
     setStats(updatedStats);
@@ -213,8 +215,8 @@ function App() {
     if (starredPropertyId === propertyId) {
       setStarredPropertyId(null);
       
-      // Recalculate comparisons with no reference property
-      const recalculatedData = calculateComparisons(data, null);
+      // Recalculate comparisons with no reference property using current processed data
+      const recalculatedData = calculateComparisons(processedData, null);
       setProcessedData(recalculatedData);
       
       // Update stats
@@ -229,13 +231,13 @@ function App() {
     }
     
     // Show confirmation modal for new star
-    const property = data.find(p => p['MLS #'] === propertyId);
+    const property = processedData.find(p => p['MLS #'] === propertyId);
     setPendingStarProperty(property);
     setShowStarConfirmModal(true);
     
     // If there's already a starred property, show additional warning
     if (starredPropertyId) {
-      const currentStarredProperty = data.find(p => p['MLS #'] === starredPropertyId);
+      const currentStarredProperty = processedData.find(p => p['MLS #'] === starredPropertyId);
       console.log(`Replacing reference property: ${currentStarredProperty['Address']} with ${property['Address']}`);
     }
   };
@@ -245,8 +247,8 @@ function App() {
     
     setStarredPropertyId(pendingStarProperty['MLS #']);
     
-    // Recalculate comparisons with the new starred property
-    const recalculatedData = calculateComparisons(data, pendingStarProperty['MLS #']);
+    // Recalculate comparisons with the new starred property using current processed data
+    const recalculatedData = calculateComparisons(processedData, pendingStarProperty['MLS #']);
     setProcessedData(recalculatedData);
     
     // Update stats
