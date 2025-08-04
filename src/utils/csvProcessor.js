@@ -88,6 +88,9 @@ export const recalculatePricePerSqFt = (data) => {
 export const calculateComparisons = (data, referencePropertyId = null) => {
   if (data.length === 0) return data;
 
+  console.log('calculateComparisons called with referencePropertyId:', referencePropertyId);
+  console.log('Data length:', data.length);
+
   // First recalculate Total SQFT and Price/SqFt for all properties
   const dataWithRecalculatedSQFT = recalculateTotalSQFT(data);
   const dataWithRecalculatedPricePerSqFt = recalculatePricePerSqFt(dataWithRecalculatedSQFT);
@@ -97,6 +100,7 @@ export const calculateComparisons = (data, referencePropertyId = null) => {
   
   if (referencePropertyId) {
     referenceProperty = dataWithRecalculatedPricePerSqFt.find(prop => prop['MLS #'] === referencePropertyId);
+    console.log('Found reference property:', referenceProperty ? referenceProperty['Address'] : 'NOT FOUND');
   }
   
   // If no reference property is explicitly selected, return data with blank difference fields
@@ -122,7 +126,7 @@ export const calculateComparisons = (data, referencePropertyId = null) => {
     const referenceLotSQFT = referenceProperty['LOT SQFT'] || parseLotSize(referenceProperty['Acres/Lot SF']);
     const lotDiff = propertyLotSQFT - referenceLotSQFT;
     
-    return {
+    const result = {
       ...property,
       'Sq Ft Difference vs EXP': sqftDiff,
       'Lot Difference vs EXP': lotDiff,
@@ -134,6 +138,19 @@ export const calculateComparisons = (data, referencePropertyId = null) => {
         : null,
       'Is Reference Property': property['MLS #'] === referenceProperty['MLS #'],
     };
+    
+    // Debug first property to see the calculations
+    if (property['MLS #'] === dataWithRecalculatedPricePerSqFt[0]['MLS #']) {
+      console.log('Sample property calculations:', {
+        address: property['Address'],
+        sqftDiff,
+        lotDiff,
+        priceDiff: result['Price vs EXP'],
+        isReference: result['Is Reference Property']
+      });
+    }
+    
+    return result;
   });
 };
 

@@ -213,13 +213,13 @@ function App() {
     }
   };
 
-  const handleStarProperty = (propertyId) => {
+  const handleStarProperty = async (propertyId) => {
     // If clicking on already starred property, unstar it
     if (starredPropertyId === propertyId) {
       setStarredPropertyId(null);
       
-      // Recalculate comparisons with no reference property using current processed data
-      const recalculatedData = calculateComparisons(processedData, null);
+      // Recalculate comparisons with no reference property using original data
+      const recalculatedData = calculateComparisons(data, null);
       setProcessedData(recalculatedData);
       
       // Update stats
@@ -228,7 +228,19 @@ function App() {
       
       // Auto-save if working with a session
       if (currentSessionId) {
-        handleDataUpdate(recalculatedData);
+        try {
+          console.log('Auto-saving session with no starredPropertyId');
+          await apiService.updateSession(currentSessionId, {
+            name: currentSessionName,
+            description: '', // Keep existing description
+            data: data,
+            stats: updatedStats,
+            starredPropertyId: null
+          });
+          console.log('Session automatically updated in database');
+        } catch (err) {
+          console.error('Failed to auto-save session:', err);
+        }
       }
       return;
     }
@@ -245,13 +257,19 @@ function App() {
     }
   };
 
-  const confirmStarProperty = () => {
+  const confirmStarProperty = async () => {
     if (!pendingStarProperty) return;
+    
+    console.log('confirmStarProperty called with:', pendingStarProperty['MLS #']);
+    console.log('Current starredPropertyId before:', starredPropertyId);
+    console.log('Current data length:', data.length);
     
     setStarredPropertyId(pendingStarProperty['MLS #']);
     
-    // Recalculate comparisons with the new starred property using current processed data
-    const recalculatedData = calculateComparisons(processedData, pendingStarProperty['MLS #']);
+    // Recalculate comparisons with the new starred property using original data
+    const recalculatedData = calculateComparisons(data, pendingStarProperty['MLS #']);
+    console.log('Recalculated data length:', recalculatedData.length);
+    console.log('Sample recalculated property:', recalculatedData[0]);
     setProcessedData(recalculatedData);
     
     // Update stats
@@ -260,7 +278,19 @@ function App() {
     
     // Auto-save if working with a session
     if (currentSessionId) {
-      handleDataUpdate(recalculatedData);
+      try {
+        console.log('Auto-saving session with new starredPropertyId:', pendingStarProperty['MLS #']);
+        await apiService.updateSession(currentSessionId, {
+          name: currentSessionName,
+          description: '', // Keep existing description
+          data: data,
+          stats: updatedStats,
+          starredPropertyId: pendingStarProperty['MLS #']
+        });
+        console.log('Session automatically updated in database');
+      } catch (err) {
+        console.error('Failed to auto-save session:', err);
+      }
     }
     
     // Close modal and reset pending property
