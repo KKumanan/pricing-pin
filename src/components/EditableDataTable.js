@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus } from 'lucide-react';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
-  const [sortConfig, setSortConfig] = useState({ key: 'Status', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
@@ -353,12 +353,20 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
 
   const startEditing = (rowIndex, column, value) => {
     // Allow editing of all fields except special ones that have their own UI and calculated fields
-    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison' || 
+    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison' || column === 'Status' ||
         column === 'Sq Ft Difference vs EXP' || column === 'Lot Difference vs EXP' ||
-        column === 'Price vs EXP' || column === 'Price vs EXP %' || column === 'Is Reference Property') return;
+        column === 'Price vs EXP' || column === 'Price vs EXP %' || column === 'Is Reference Property' ||
+        column === 'Price/SqFt') return;
     
     setEditingCell({ rowIndex, column });
-    setEditValue(value || '');
+    
+    // For price fields, extract the numeric value from formatted currency
+    if (column.includes('Price')) {
+      const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
+      setEditValue(numericValue);
+    } else {
+      setEditValue(value || '');
+    }
   };
 
   const saveEdit = () => {
@@ -373,9 +381,17 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
     
     if (originalIndex !== -1) {
+      let valueToSave = editValue;
+      
+      // For price fields, convert to number
+      if (column.includes('Price')) {
+        const numericValue = parseInt(editValue, 10);
+        valueToSave = isNaN(numericValue) ? 0 : numericValue;
+      }
+      
       updatedData[originalIndex] = {
         ...updatedData[originalIndex],
-        [column]: editValue
+        [column]: valueToSave
       };
       
       setLocalData(updatedData);
@@ -464,6 +480,46 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     const isEditing = editingCell && editingCell.rowIndex === rowIndex && editingCell.column === key;
     
     if (isEditing) {
+      // Special handling for price fields
+      if (key.includes('Price')) {
+        const formatPriceInput = (input) => {
+          // Remove all non-digit characters
+          const numbersOnly = input.replace(/[^\d]/g, '');
+          if (numbersOnly === '') return '';
+          
+          // Convert to number and format
+          const number = parseInt(numbersOnly, 10);
+          if (isNaN(number)) return '';
+          
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(number);
+        };
+
+        const handlePriceChange = (e) => {
+          const rawValue = e.target.value;
+          // Remove formatting for processing
+          const numbersOnly = rawValue.replace(/[^\d]/g, '');
+          setEditValue(numbersOnly);
+        };
+
+        return (
+          <input
+            type="text"
+            value={editValue ? formatPriceInput(editValue) : ''}
+            onChange={handlePriceChange}
+            onKeyDown={handleKeyPress}
+            onBlur={saveEdit}
+            className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+            autoFocus
+            placeholder="Enter amount..."
+          />
+        );
+      }
+
       return (
         <input
           type="text"
@@ -503,31 +559,73 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       if (!isNaN(closePrice) && !isNaN(listPrice)) {
         if (closePrice > listPrice) {
           return (
-            <span className="text-green-700 font-semibold flex items-center gap-1">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
-              <ChevronUp className="inline w-4 h-4 text-green-500" />
-            </span>
+            <div 
+              className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+              onClick={() => startEditing(rowIndex, key, value)}
+              title="Click to edit"
+            >
+              <span className="text-green-700 font-semibold flex items-center gap-1">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
+                <ChevronUp className="inline w-4 h-4 text-green-500" />
+              </span>
+            </div>
           );
         } else if (closePrice < listPrice) {
           return (
-            <span className="text-red-700 font-semibold flex items-center gap-1">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
-              <ChevronDown className="inline w-4 h-4 text-red-500" />
-            </span>
+            <div 
+              className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+              onClick={() => startEditing(rowIndex, key, value)}
+              title="Click to edit"
+            >
+              <span className="text-red-700 font-semibold flex items-center gap-1">
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(closePrice)}
+                <ChevronDown className="inline w-4 h-4 text-red-500" />
+              </span>
+            </div>
           );
         }
       }
       // If equal or not a number, show normal
-      return <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)}</span>;
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value)}</span>
+        </div>
+      );
+    }
+
+    // Special handling for Price/SqFt (non-editable, calculated field)
+    if (key === 'Price/SqFt' && typeof value === 'number') {
+      return (
+        <div className="px-2 py-1">
+          {new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(value)}
+        </div>
+      );
     }
 
     if (key.includes('Price') && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }).format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(value)}
+        </div>
+      );
     }
     
     if (key.includes('SQFT') && typeof value === 'number') {
@@ -610,6 +708,73 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
 
+    // Special handling for Status column
+    if (key === 'Status') {
+      const getStatusColor = (statusValue) => {
+        switch (statusValue) {
+          case 'EXP':
+            return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
+          case 'CLS':
+            return 'bg-green-100 text-green-800 hover:bg-green-200';
+          case 'ACT':
+            return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+          case 'PND':
+            return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+          default:
+            return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
+        }
+      };
+
+      const cycleStatus = (currentValue) => {
+        switch (currentValue) {
+          case 'EXP':
+            return 'CLS';
+          case 'CLS':
+            return 'ACT';
+          case 'ACT':
+            return 'PND';
+          case 'PND':
+            return 'EXP';
+          default:
+            return 'EXP';
+        }
+      };
+
+      return (
+        <div className="flex items-center justify-center">
+          <button
+            type="button"
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${getStatusColor(value)}`}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const newValue = cycleStatus(value);
+              const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+              const updatedData = [...localData];
+              
+              // Find the actual row in the original data
+              const rowToUpdate = filteredAndSortedData[actualRowIndex];
+              const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+              
+              if (originalIndex !== -1) {
+                updatedData[originalIndex] = {
+                  ...updatedData[originalIndex],
+                  'Status': newValue
+                };
+                
+                setLocalData(updatedData);
+                if (onDataUpdate) {
+                  onDataUpdate(updatedData);
+                }
+              }
+            }}
+          >
+            {value || 'EXP'}
+          </button>
+        </div>
+      );
+    }
+
     // Special handling for Worth Comparison column
     if (key === 'Worth Comparison') {
       const getWorthComparisonColor = (worthValue) => {
@@ -676,8 +841,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     }
     
     // For editable fields, make them clickable (all fields except special ones and calculated fields)
-    if (!['Rating', 'Good Comp', 'Worth Comparison', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
-           'Price vs EXP', 'Price vs EXP %', 'Is Reference Property'].includes(key)) {
+    if (!['Rating', 'Good Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
+           'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(key)) {
       return (
         <div 
           className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${

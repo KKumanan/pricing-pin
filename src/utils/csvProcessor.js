@@ -61,20 +61,48 @@ export const processCSVData = (csvText) => {
   });
 };
 
+export const recalculateTotalSQFT = (data) => {
+  return data.map(property => ({
+    ...property,
+    'Total SQFT': (property['Above Grade Finished SQFT'] || 0) + (property['Below Grade Finished SQFT'] || 0),
+  }));
+};
+
+export const recalculatePricePerSqFt = (data) => {
+  return data.map(property => {
+    const listPrice = property['List Price'] || 0;
+    const aboveGradeSQFT = property['Above Grade Finished SQFT'] || 0;
+    const belowGradeSQFT = property['Below Grade Finished SQFT'] || 0;
+    const totalSQFT = aboveGradeSQFT + belowGradeSQFT;
+    
+    // Calculate Price/SqFt only if we have both price and square footage
+    const pricePerSqFt = (listPrice > 0 && totalSQFT > 0) ? listPrice / totalSQFT : 0;
+    
+    return {
+      ...property,
+      'Price/SqFt': pricePerSqFt,
+    };
+  });
+};
+
 export const calculateComparisons = (data, referencePropertyId = null) => {
   if (data.length === 0) return data;
+
+  // First recalculate Total SQFT and Price/SqFt for all properties
+  const dataWithRecalculatedSQFT = recalculateTotalSQFT(data);
+  const dataWithRecalculatedPricePerSqFt = recalculatePricePerSqFt(dataWithRecalculatedSQFT);
 
   // Find the reference property (only by ID, no fallback to EXP)
   let referenceProperty = null;
   
   if (referencePropertyId) {
-    referenceProperty = data.find(prop => prop['MLS #'] === referencePropertyId);
+    referenceProperty = dataWithRecalculatedPricePerSqFt.find(prop => prop['MLS #'] === referencePropertyId);
   }
   
   // If no reference property is explicitly selected, return data with blank difference fields
   if (!referenceProperty) {
     console.log('No subject property selected. Difference fields will be blank.');
-    return data.map(property => ({
+    return dataWithRecalculatedPricePerSqFt.map(property => ({
       ...property,
       'Sq Ft Difference vs EXP': null,
       'Lot Difference vs EXP': null,
@@ -86,9 +114,13 @@ export const calculateComparisons = (data, referencePropertyId = null) => {
 
   console.log('Using reference property:', referenceProperty['Address']);
 
-  return data.map(property => {
+  return dataWithRecalculatedPricePerSqFt.map(property => {
     const sqftDiff = (property['Above Grade Finished SQFT'] || 0) - (referenceProperty['Above Grade Finished SQFT'] || 0);
-    const lotDiff = parseLotSize(property['Acres/Lot SF']) - parseLotSize(referenceProperty['Acres/Lot SF']);
+    
+    // Use LOT SQFT field if available, otherwise fall back to parsing Acres/Lot SF
+    const propertyLotSQFT = property['LOT SQFT'] || parseLotSize(property['Acres/Lot SF']);
+    const referenceLotSQFT = referenceProperty['LOT SQFT'] || parseLotSize(referenceProperty['Acres/Lot SF']);
+    const lotDiff = propertyLotSQFT - referenceLotSQFT;
     
     return {
       ...property,

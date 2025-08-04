@@ -5,7 +5,7 @@ import EditableDataTable from './components/EditableDataTable';
 import DataEntry from './components/DataEntry';
 import SessionManager from './components/SessionManager';
 import MergeCSV from './components/MergeCSV';
-import { processCSVData, calculateComparisons, generateSummaryStats, exportToCSV } from './utils/csvProcessor';
+import { processCSVData, calculateComparisons, generateSummaryStats, exportToCSV, recalculateTotalSQFT, recalculatePricePerSqFt } from './utils/csvProcessor';
 import apiService from './utils/apiService';
 import { BarChart3, FileSpreadsheet, TrendingUp, Edit3, Database, Star, GitMerge } from 'lucide-react';
 import CompareTab from './components/CompareTab';
@@ -124,10 +124,13 @@ function App() {
   };
 
   const handleDataUpdate = async (updatedData) => {
+    // Recalculate Total SQFT and differences with current starred property
+    const recalculatedData = calculateComparisons(updatedData, starredPropertyId);
+    
     // Update both data and processedData to keep them in sync
     setData(updatedData);
-    setProcessedData(updatedData);
-    const updatedStats = generateSummaryStats(updatedData);
+    setProcessedData(recalculatedData);
+    const updatedStats = generateSummaryStats(recalculatedData);
     setStats(updatedStats);
 
     // If we're working with a loaded session, automatically save changes back to the database
