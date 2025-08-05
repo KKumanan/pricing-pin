@@ -1112,7 +1112,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       {/* Table */}
       <div className="table-container" ref={tableContainerRef}>
         <table className="table">
-          <thead>
+          <thead className="sticky top-0 z-30 bg-gray-50">
             <tr>
               {/* Checkbox column for row selection */}
               <th className="table-header w-12 px-4 py-3">

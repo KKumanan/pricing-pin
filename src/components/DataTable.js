@@ -380,7 +380,7 @@ const DataTable = ({ data, onExport }) => {
       {/* Table */}
       <div className="table-container" ref={tableContainerRef}>
         <table className="table">
-          <thead>
+          <thead className="sticky top-0 z-30 bg-gray-50">
             <tr>
               {visibleColumns.map(column => (
                 <th

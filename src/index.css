@@ -30,7 +30,7 @@
   }
   
   .table-container {
-    @apply overflow-x-auto rounded-lg border border-gray-200 relative w-full;
+    @apply overflow-x-auto overflow-y-auto rounded-lg border border-gray-200 relative w-full max-h-[70vh];
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
   }
@@ -59,6 +59,11 @@
   
   .table-header {
     @apply bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider;
+  }
+  
+  /* Sticky header styles */
+  thead.sticky {
+    @apply bg-gray-50 shadow-sm;
   }
   
   .table-cell {
