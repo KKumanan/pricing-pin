@@ -19,7 +19,9 @@ const DataTable = ({ data, onExport }) => {
   // Horizontal scroll state
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [showScrollNav, setShowScrollNav] = useState(true);
   const tableContainerRef = useRef(null);
+  const scrollIntervalRef = useRef(null);
   
   const [selectedColumns, setSelectedColumns] = useState([
     'Address', 'Status', 'List Price', 'Close Price', 
@@ -63,6 +65,32 @@ const DataTable = ({ data, onExport }) => {
         left: 300,
         behavior: 'smooth'
       });
+    }
+  };
+
+  // Continuous scrolling handlers
+  const startContinuousScroll = (direction) => {
+    const scrollStep = direction === 'left' ? -20 : 20;
+    const scrollInterval = () => {
+      if (tableContainerRef.current) {
+        tableContainerRef.current.scrollBy({
+          left: scrollStep,
+          behavior: 'auto'
+        });
+      }
+    };
+    
+    // Start immediate scroll
+    scrollInterval();
+    
+    // Set up continuous scrolling
+    scrollIntervalRef.current = setInterval(scrollInterval, 16); // ~60fps for smoother scrolling
+  };
+
+  const stopContinuousScroll = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
     }
   };
 
@@ -401,25 +429,56 @@ const DataTable = ({ data, onExport }) => {
         </table>
       </div>
 
-      {/* Horizontal Scroll Navigation */}
-      {visibleColumns.length > 0 && (
-        <div className="flex items-center justify-end mt-4 gap-2">
-          <span className="text-sm text-gray-600 mr-2">Scroll:</span>
+      {/* Floating Horizontal Scroll Navigation */}
+      {visibleColumns.length > 0 && showScrollNav && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-1 relative">
+            <button
+              onClick={handleScrollLeft}
+              onMouseDown={() => startContinuousScroll('left')}
+              onMouseUp={stopContinuousScroll}
+              onMouseLeave={stopContinuousScroll}
+              onTouchStart={() => startContinuousScroll('left')}
+              onTouchEnd={stopContinuousScroll}
+              disabled={!canScrollLeft}
+              className="floating-scroll-button"
+              title="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleScrollRight}
+              onMouseDown={() => startContinuousScroll('right')}
+              onMouseUp={stopContinuousScroll}
+              onMouseLeave={stopContinuousScroll}
+              onTouchStart={() => startContinuousScroll('right')}
+              onTouchEnd={stopContinuousScroll}
+              disabled={!canScrollRight}
+              className="floating-scroll-button"
+              title="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowScrollNav(false)}
+              className="absolute -top-1 -right-1 w-5 h-5 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+              title="Hide scroll navigation"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Show scroll navigation button when hidden */}
+      {visibleColumns.length > 0 && !showScrollNav && (
+        <div className="fixed bottom-6 right-6 z-40">
           <button
-            onClick={handleScrollLeft}
-            disabled={!canScrollLeft}
-            className="scroll-nav-button"
-            title="Scroll left"
+            onClick={() => setShowScrollNav(true)}
+            className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors"
+            title="Show scroll navigation"
           >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleScrollRight}
-            disabled={!canScrollRight}
-            className="scroll-nav-button"
-            title="Scroll right"
-          >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 rotate-180" />
           </button>
         </div>
       )}

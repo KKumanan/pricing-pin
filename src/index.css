@@ -94,4 +94,17 @@
   .scroll-nav-button:not(:disabled):hover {
     @apply shadow-md transform scale-105;
   }
+  
+  /* Floating scroll navigation styles */
+  .floating-scroll-button {
+    @apply bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border border-gray-300 hover:border-gray-400 font-medium py-2 px-3 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+  
+  .floating-scroll-button:disabled {
+    @apply opacity-30 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200;
+  }
+  
+  .floating-scroll-button:not(:disabled):hover {
+    @apply shadow-sm transform scale-105;
+  }
 } 
