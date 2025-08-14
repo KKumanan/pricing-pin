@@ -953,12 +953,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const getDisplayName = (columnName) => {
+    // Map display names to ensure they match actual data fields
     const displayNames = {
+      // Fix misaligned column names
       'Sq Ft Difference vs EXP': 'SQFT DIFFERENCE',
       'Lot Difference vs EXP': 'LOT SQFT DIFFERENCE',
       'LOT SQFT': 'LOT SQFT',
       'BELOW GRADE SQFT': 'BELOW GRADE SQFT',
       'SUBDIVISION': 'SUBDIVISION',
+      'Price/SqFt': 'PRICE PER SQFT',
+      'Above Grade Finished SQFT': 'ABOVE GRADE SQFT',
+      'Worth Comparison': 'WORTH COMPARISON',
+      'Status Contractual': 'STATUS CONTRACTUAL',
+      'GARAGE SPACES': 'GARAGE SPACES',
+      'PRIMARY BATHROOM': 'PRIMARY BATHROOM',
+      '2 Story Family Room': '2 STORY FAMILY ROOM',
+      'Good Comp': 'GOOD COMP'
     };
     return displayNames[columnName] || columnName;
   };
@@ -1309,7 +1319,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       {/* Column Management Modal */}
       {showColumnManager && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[80vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Column Management</h3>
               <button
@@ -1336,7 +1346,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {allColumns.map(column => (
                   <div
                     key={column}
@@ -1471,4 +1481,4 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   );
 };
 
-export default EditableDataTable; 
+export default EditableDataTable;
