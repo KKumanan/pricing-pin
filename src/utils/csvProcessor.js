@@ -72,11 +72,10 @@ export const recalculatePricePerSqFt = (data) => {
   return data.map(property => {
     const listPrice = property['List Price'] || 0;
     const aboveGradeSQFT = property['Above Grade Finished SQFT'] || 0;
-    const belowGradeSQFT = property['Below Grade Finished SQFT'] || 0;
-    const totalSQFT = aboveGradeSQFT + belowGradeSQFT;
     
-    // Calculate Price/SqFt only if we have both price and square footage
-    const pricePerSqFt = (listPrice > 0 && totalSQFT > 0) ? listPrice / totalSQFT : 0;
+    // Calculate Price/SqFt only if we have both price and above grade square footage
+    // According to requirements, Price/SqFt should be LIST PRICE / ABOVE GRADE FINISHED SQFT
+    const pricePerSqFt = (listPrice > 0 && aboveGradeSQFT > 0) ? listPrice / aboveGradeSQFT : 0;
     
     return {
       ...property,
@@ -261,4 +260,4 @@ export const exportToCSV = (data, filename = 'processed_data.csv') => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-}; 
+};
