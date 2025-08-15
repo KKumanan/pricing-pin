@@ -151,7 +151,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         
         // Special handling for Status column
         if (sortConfig.key === 'Status') {
-          const statusOrder = { 'EXP': 1, 'CLS': 2, 'ACT': 3, 'PND': 4 };
+          const statusOrder = { 'EXP': 1, 'CLS': 2, 'ACT': 3, 'PND': 4, 'CS': 5 };
           const aOrder = statusOrder[aVal] || 5; // Any other status goes last
           const bOrder = statusOrder[bVal] || 5;
           
@@ -813,6 +813,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
             return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
           case 'PND':
             return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+          case 'CS':
+            return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
           default:
             return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
         }
@@ -827,6 +829,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           case 'ACT':
             return 'PND';
           case 'PND':
+            return 'CS';
+          case 'CS':
             return 'EXP';
           default:
             return 'EXP';
@@ -1471,4 +1475,4 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   );
 };
 
-export default EditableDataTable; 
+export default EditableDataTable;
