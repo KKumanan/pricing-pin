@@ -457,6 +457,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     if (column.includes('Price')) {
       const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
       setEditValue(numericValue);
+    } 
+    // For SQFT fields, extract the numeric value from formatted number
+    else if (column.includes('SQFT')) {
+      const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
+      setEditValue(numericValue);
     } else {
       setEditValue(value || '');
     }
@@ -479,6 +484,12 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       // For price fields, convert to number
       if (column.includes('Price')) {
         const numericValue = parseInt(editValue, 10);
+        valueToSave = isNaN(numericValue) ? 0 : numericValue;
+      }
+      // For SQFT fields, convert to number (strip commas)
+      else if (column.includes('SQFT')) {
+        const cleanedValue = editValue.toString().replace(/,/g, '');
+        const numericValue = parseFloat(cleanedValue);
         valueToSave = isNaN(numericValue) ? 0 : numericValue;
       }
       
@@ -612,6 +623,41 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           />
         );
       }
+      
+      // Special handling for SQFT fields
+      if (key.includes('SQFT')) {
+        const formatSqftInput = (input) => {
+          // Remove all non-digit characters
+          const numbersOnly = input.replace(/[^\d]/g, '');
+          if (numbersOnly === '') return '';
+          
+          // Convert to number and format
+          const number = parseInt(numbersOnly, 10);
+          if (isNaN(number)) return '';
+          
+          return new Intl.NumberFormat('en-US').format(number);
+        };
+
+        const handleSqftChange = (e) => {
+          const rawValue = e.target.value;
+          // Remove formatting for processing
+          const numbersOnly = rawValue.replace(/[^\d]/g, '');
+          setEditValue(numbersOnly);
+        };
+
+        return (
+          <input
+            type="text"
+            value={editValue ? formatSqftInput(editValue) : ''}
+            onChange={handleSqftChange}
+            onKeyDown={handleKeyPress}
+            onBlur={saveEdit}
+            className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+            autoFocus
+            placeholder="Enter square feet..."
+          />
+        );
+      }
 
       return (
         <input
@@ -722,19 +768,51 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     }
     
     if (key.includes('SQFT') && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key.includes('Lot') && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key === 'LOT SQFT' && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key === 'BELOW GRADE SQFT' && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key.includes('Difference') && typeof value === 'number') {
