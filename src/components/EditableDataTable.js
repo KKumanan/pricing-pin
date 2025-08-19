@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateZillowLink } from '../utils/csvProcessor';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -53,7 +54,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     return Object.keys(localData[0]);
   }, [localData]);
 
-  // Function to add a new row
+
+
+// Function to add a new row
   const addNewRow = () => {
     if (localData.length === 0) return;
     
@@ -78,6 +81,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         newRow[key] = '';
       }
     });
+    
+    // We'll add the Zillow Link after the user enters an address and city
+    // This will be handled in the handleCellEdit function
     
     const updatedData = [newRow, ...localData];
     setLocalData(updatedData);
@@ -151,7 +157,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         
         // Special handling for Status column
         if (sortConfig.key === 'Status') {
-          const statusOrder = { 'EXP': 1, 'CLS': 2, 'ACT': 3, 'PND': 4 };
+          const statusOrder = { 'EXP': 1, 'CLS': 2, 'ACT': 3, 'PND': 4, 'CS': 5 };
           const aOrder = statusOrder[aVal] || 5; // Any other status goes last
           const bOrder = statusOrder[bVal] || 5;
           
@@ -457,6 +463,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     if (column.includes('Price')) {
       const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
       setEditValue(numericValue);
+    } 
+    // For SQFT fields, extract the numeric value from formatted number
+    else if (column.includes('SQFT')) {
+      const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
+      setEditValue(numericValue);
     } else {
       setEditValue(value || '');
     }
@@ -481,11 +492,28 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         const numericValue = parseInt(editValue, 10);
         valueToSave = isNaN(numericValue) ? 0 : numericValue;
       }
+      // For SQFT fields, convert to number (strip commas)
+      else if (column.includes('SQFT')) {
+        const cleanedValue = editValue.toString().replace(/,/g, '');
+        const numericValue = parseFloat(cleanedValue);
+        valueToSave = isNaN(numericValue) ? 0 : numericValue;
+      }
       
       updatedData[originalIndex] = {
         ...updatedData[originalIndex],
         [column]: valueToSave
       };
+      
+      // If the address or city was edited, update the Zillow link
+      if (column === 'Address' || column === 'City') {
+        const address = column === 'Address' ? valueToSave : updatedData[originalIndex]['Address'];
+        const city = column === 'City' ? valueToSave : updatedData[originalIndex]['City'];
+        
+        // Only generate the link if both address and city are available
+        if (address && city) {
+          updatedData[originalIndex]['Zillow Link'] = generateZillowLink(address, city);
+        }
+      }
       
       setLocalData(updatedData);
       if (onDataUpdate) {
@@ -612,6 +640,41 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           />
         );
       }
+      
+      // Special handling for SQFT fields
+      if (key.includes('SQFT')) {
+        const formatSqftInput = (input) => {
+          // Remove all non-digit characters
+          const numbersOnly = input.replace(/[^\d]/g, '');
+          if (numbersOnly === '') return '';
+          
+          // Convert to number and format
+          const number = parseInt(numbersOnly, 10);
+          if (isNaN(number)) return '';
+          
+          return new Intl.NumberFormat('en-US').format(number);
+        };
+
+        const handleSqftChange = (e) => {
+          const rawValue = e.target.value;
+          // Remove formatting for processing
+          const numbersOnly = rawValue.replace(/[^\d]/g, '');
+          setEditValue(numbersOnly);
+        };
+
+        return (
+          <input
+            type="text"
+            value={editValue ? formatSqftInput(editValue) : ''}
+            onChange={handleSqftChange}
+            onKeyDown={handleKeyPress}
+            onBlur={saveEdit}
+            className="px-2 py-1 border border-gray-300 rounded text-sm w-full"
+            autoFocus
+            placeholder="Enter square feet..."
+          />
+        );
+      }
 
       return (
         <input
@@ -722,19 +785,51 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     }
     
     if (key.includes('SQFT') && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key.includes('Lot') && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key === 'LOT SQFT' && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key === 'BELOW GRADE SQFT' && typeof value === 'number') {
-      return new Intl.NumberFormat('en-US').format(value);
+      return (
+        <div 
+          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200`}
+          onClick={() => startEditing(rowIndex, key, value)}
+          title="Click to edit"
+        >
+          {new Intl.NumberFormat('en-US').format(value)}
+        </div>
+      );
     }
     
     if (key.includes('Difference') && typeof value === 'number') {
@@ -813,6 +908,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
             return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
           case 'PND':
             return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+          case 'CS':
+            return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
           default:
             return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
         }
@@ -827,6 +924,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           case 'ACT':
             return 'PND';
           case 'PND':
+            return 'CS';
+          case 'CS':
             return 'EXP';
           default:
             return 'EXP';
@@ -953,12 +1052,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const getDisplayName = (columnName) => {
+    // Map display names to ensure they match actual data fields
     const displayNames = {
+      // Fix misaligned column names
       'Sq Ft Difference vs EXP': 'SQFT DIFFERENCE',
       'Lot Difference vs EXP': 'LOT SQFT DIFFERENCE',
       'LOT SQFT': 'LOT SQFT',
       'BELOW GRADE SQFT': 'BELOW GRADE SQFT',
       'SUBDIVISION': 'SUBDIVISION',
+      'Price/SqFt': 'PRICE PER SQFT',
+      'Above Grade Finished SQFT': 'ABOVE GRADE SQFT',
+      'Worth Comparison': 'WORTH COMPARISON',
+      'Status Contractual': 'STATUS CONTRACTUAL',
+      'GARAGE SPACES': 'GARAGE SPACES',
+      'PRIMARY BATHROOM': 'PRIMARY BATHROOM',
+      '2 Story Family Room': '2 STORY FAMILY ROOM',
+      'Good Comp': 'GOOD COMP'
     };
     return displayNames[columnName] || columnName;
   };
@@ -1309,7 +1418,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       {/* Column Management Modal */}
       {showColumnManager && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[80vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Column Management</h3>
               <button
@@ -1336,7 +1445,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {allColumns.map(column => (
                   <div
                     key={column}
@@ -1471,4 +1580,4 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   );
 };
 
-export default EditableDataTable; 
+export default EditableDataTable;

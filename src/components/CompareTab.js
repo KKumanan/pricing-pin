@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronUp, ChevronDown, Home, ExternalLink, TrendingUp, TrendingDown, Minus, Star } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Home, ExternalLink, TrendingUp, TrendingDown, Minus, Star, Check, X as XIcon } from 'lucide-react';
+import StarRating from './StarRating';
 
 const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [selectedComp, setSelectedComp] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
   const [comparisonResult, setComparisonResult] = useState(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [goodCompValue, setGoodCompValue] = useState(null);
 
   // Escape key closes popup
   useEffect(() => {
@@ -34,12 +37,20 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
     } else {
       setComparisonResult(null);
     }
+    
+    // Set the rating value based on existing rating
+    setRatingValue(comp['Rating'] || 0);
+    
+    // Set the good comp value based on existing good comp
+    setGoodCompValue(comp['Good Comp'] === 'YES' ? 'yes' : comp['Good Comp'] === 'NO' ? 'no' : null);
   };
 
   const handleClosePopup = () => {
     setShowPopup(false);
     setSelectedComp(null);
     setComparisonResult(null);
+    setRatingValue(0);
+    setGoodCompValue(null);
   };
 
   const handleWorthComparison = (comparisonType) => {
@@ -72,6 +83,48 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
           return {
             ...comp,
             'Worth Comparison': worthValue
+          };
+        }
+        return comp;
+      });
+      
+      // Find the reference property and add it back to the data
+      const updatedData = updatedComps.concat([referenceProperty]);
+      onDataUpdate(updatedData);
+    }
+  };
+  
+  const handleRatingChange = (rating) => {
+    setRatingValue(rating);
+    
+    // Update the data with the new rating
+    if (selectedComp && onDataUpdate) {
+      const updatedComps = comps.map(comp => {
+        if (comp['MLS #'] === selectedComp['MLS #']) {
+          return {
+            ...comp,
+            'Rating': rating
+          };
+        }
+        return comp;
+      });
+      
+      // Find the reference property and add it back to the data
+      const updatedData = updatedComps.concat([referenceProperty]);
+      onDataUpdate(updatedData);
+    }
+  };
+  
+  const handleGoodCompChange = (value) => {
+    setGoodCompValue(value);
+    
+    // Update the data with the new good comp value
+    if (selectedComp && onDataUpdate) {
+      const updatedComps = comps.map(comp => {
+        if (comp['MLS #'] === selectedComp['MLS #']) {
+          return {
+            ...comp,
+            'Good Comp': value === 'yes' ? 'YES' : 'NO'
           };
         }
         return comp;
@@ -403,6 +456,64 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
                 </div>
               </div>
 
+              {/* Rating and Good Comp */}
+              <div className="border-t border-gray-200 pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {/* Rating */}
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Property Rating</h4>
+                    <p className="text-gray-600 mb-4">
+                      How would you rate this property on a scale of 1-5 stars?
+                    </p>
+                    <div className="flex items-center">
+                      <StarRating 
+                        value={ratingValue} 
+                        onChange={handleRatingChange} 
+                        editable={true}
+                        size={28}
+                      />
+                      {ratingValue > 0 && (
+                        <span className="ml-3 text-gray-700">
+                          {ratingValue} star{ratingValue !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Good Comp */}
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Good Comp</h4>
+                    <p className="text-gray-600 mb-4">
+                      Is this a good comparable property for the reference property?
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => handleGoodCompChange('yes')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                          goodCompValue === 'yes'
+                            ? 'bg-green-100 text-green-800 border-2 border-green-300'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Check className="w-5 h-5" />
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => handleGoodCompChange('no')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                          goodCompValue === 'no'
+                            ? 'bg-red-100 text-red-800 border-2 border-red-300'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <XIcon className="w-5 h-5" />
+                        No
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Worth Comparison */}
               <div className="border-t border-gray-200 pt-6">
                 <h4 className="text-lg font-medium text-gray-900 mb-4">Worth Comparison</h4>
@@ -460,4 +571,4 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
   );
 };
 
-export default CompareTab; 
+export default CompareTab;
