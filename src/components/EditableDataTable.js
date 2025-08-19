@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateZillowLink } from '../utils/csvProcessor';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -53,7 +54,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     return Object.keys(localData[0]);
   }, [localData]);
 
-  // Function to add a new row
+
+
+// Function to add a new row
   const addNewRow = () => {
     if (localData.length === 0) return;
     
@@ -78,6 +81,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         newRow[key] = '';
       }
     });
+    
+    // We'll add the Zillow Link after the user enters an address and city
+    // This will be handled in the handleCellEdit function
     
     const updatedData = [newRow, ...localData];
     setLocalData(updatedData);
@@ -497,6 +503,17 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         ...updatedData[originalIndex],
         [column]: valueToSave
       };
+      
+      // If the address or city was edited, update the Zillow link
+      if (column === 'Address' || column === 'City') {
+        const address = column === 'Address' ? valueToSave : updatedData[originalIndex]['Address'];
+        const city = column === 'City' ? valueToSave : updatedData[originalIndex]['City'];
+        
+        // Only generate the link if both address and city are available
+        if (address && city) {
+          updatedData[originalIndex]['Zillow Link'] = generateZillowLink(address, city);
+        }
+      }
       
       setLocalData(updatedData);
       if (onDataUpdate) {
