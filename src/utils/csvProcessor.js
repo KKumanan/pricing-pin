@@ -39,17 +39,17 @@ export const processCSVData = (csvText) => {
             'Main Level BR': row['Main Level BR'] || '',
             'Main Level Full Bath': row['Main Level Full Bath'] || '',
             // Split Kitchen Exterior into separate fields
-            'KITCHEN': row['KITCHEN'] || '',
-            'EXTERIOR': row['EXTERIOR'] || '',
-            'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] || '',
+            'Kitchen': row['Kitchen'] || '',
+            'Exterior': row['Exterior'] || '',
+            'Primary Bathroom': row['Primary Bathroom'] || '',
             // Combine garage spaces
-            'GARAGE SPACES': combineGarageSpaces(row['Attached Garage # of Spaces'], row['Detached Garage # of Spaces']),
+            'Garage Spaces': combineGarageSpaces(row['Attached Garage # of Spaces'], row['Detached Garage # of Spaces']),
             // Add lot size in square feet
-            'LOT SQFT': parseLotSize(row['Acres/Lot SF']),
+            'Lot sqft': parseLotSize(row['Acres/Lot SF']),
             // Add below grade square footage
-            'BELOW GRADE SQFT': parseNumber(row['Below Grade Finished SQFT']),
+            'Below Grade sqft': parseNumber(row['Below Grade Finished SQFT']),
             // Add subdivision name
-            'SUBDIVISION': row['Subdivision/Neighborhood'] || '',
+            'Subdivision': row['Subdivision/Neighborhood'] || '',
           }));
           resolve(processedData);
         }

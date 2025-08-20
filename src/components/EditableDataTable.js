@@ -1052,16 +1052,25 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const getDisplayName = (columnName) => {
-    // Special case for SUBDIVISION column
-    if (columnName === 'SUBDIVISION') {
-      return 'Neighborhood';
-    }
-    
-    // Convert column name to proper case: first letter of each word capitalized, rest lowercase
-    return columnName
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    // Map display names to ensure they match actual data fields
+    const displayNames = {
+      // Fix misaligned column names
+      'Sq Ft Difference vs EXP': 'Sqft Difference',
+      'Lot Difference vs EXP': 'Lot sqft Difference',
+      'LOT SQFT': 'Lot sqft',
+      'BELOW GRADE SQFT': 'Below Grade SQFT',
+      'SUBDIVISION': 'Subdivision',
+      'Price/SqFt': 'Price Per sqft',
+      'Above Grade Finished SQFT': 'Aboe Grade sqft',
+      'Worth Comparison': 'Worth Comparison',
+      'Status Contractual': 'Status Contractual',
+      'GARAGE SPACES': 'Garage Spaces',
+      'PRIMARY BATHROOM': 'Primary Bathroom',
+      '2 Story Family Room': '2 Story Family Room',
+      'Good Comp': 'Good Comp',
+      'Subdivision/Neighborhood': 'Neighborhood'
+    };
+    return displayNames[columnName] || columnName;
   };
 
   const getSortIcon = (key) => {
