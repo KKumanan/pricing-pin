@@ -44,7 +44,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'Above Grade Finished SQFT', 'Price/SqFt', 'LOT SQFT', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
     'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'SUBDIVISION',
+    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Neighborhood',
     'Rating', 'Good Comp'
   ]);
 
@@ -116,7 +116,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
       'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
       'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
-      'SUBDIVISION': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
+      'Neighborhood': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
       'LOT SQFT': row['LOT SQFT'] === undefined || row['LOT SQFT'] === null ? '' : row['LOT SQFT']
     }));
     setLocalData(dataWithDefaults);
@@ -1052,24 +1052,16 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const getDisplayName = (columnName) => {
-    // Map display names to ensure they match actual data fields
-    const displayNames = {
-      // Fix misaligned column names
-      'Sq Ft Difference vs EXP': 'SQFT DIFFERENCE',
-      'Lot Difference vs EXP': 'LOT SQFT DIFFERENCE',
-      'LOT SQFT': 'LOT SQFT',
-      'BELOW GRADE SQFT': 'BELOW GRADE SQFT',
-      'SUBDIVISION': 'SUBDIVISION',
-      'Price/SqFt': 'PRICE PER SQFT',
-      'Above Grade Finished SQFT': 'ABOVE GRADE SQFT',
-      'Worth Comparison': 'WORTH COMPARISON',
-      'Status Contractual': 'STATUS CONTRACTUAL',
-      'GARAGE SPACES': 'GARAGE SPACES',
-      'PRIMARY BATHROOM': 'PRIMARY BATHROOM',
-      '2 Story Family Room': '2 STORY FAMILY ROOM',
-      'Good Comp': 'GOOD COMP'
-    };
-    return displayNames[columnName] || columnName;
+    // Special case for SUBDIVISION column
+    if (columnName === 'SUBDIVISION') {
+      return 'Neighborhood';
+    }
+    
+    // Convert column name to proper case: first letter of each word capitalized, rest lowercase
+    return columnName
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getSortIcon = (key) => {
@@ -1248,10 +1240,10 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[130px]';
                       if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === '2 Story Family Room') return 'min-w-[120px]';
                       if (col === 'Condition') return 'min-w-[100px]';
-                    if (col === 'GARAGE SPACES') return 'min-w-[140px]';
-                    if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
-                    if (col === 'SUBDIVISION') return 'min-w-[160px]';
-                    if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
+                                          if (col === 'GARAGE SPACES') return 'min-w-[140px]';
+                      if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
+                      if (col === 'Neighborhood') return 'min-w-[160px]';
+                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                     return '';
                   };
                 
@@ -1337,7 +1329,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'Condition') return 'min-w-[100px]';
                       if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
-                      if (col === 'SUBDIVISION') return 'min-w-[160px]';
+                      if (col === 'Neighborhood') return 'min-w-[160px]';
                       if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                       return '';
                     };

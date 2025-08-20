@@ -223,7 +223,7 @@ const combineGarageSpaces = (attachedSpaces, detachedSpaces) => {
   return total > 0 ? total : null;
 };
 
-const generateZillowLink = (address, city) => {
+export const generateZillowLink = (address, city) => {
   if (!address || !city) return null;
   
   // Clean and format the address for Zillow URL
