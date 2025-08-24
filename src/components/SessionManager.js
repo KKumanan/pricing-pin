@@ -28,7 +28,13 @@ const SessionManager = ({
     
     try {
       const data = await apiService.getSessions();
-      setSessions(data);
+      // Sort sessions by updated_at timestamp, most recent first
+      const sortedSessions = data.sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at || 0);
+        const dateB = new Date(b.updated_at || b.created_at || 0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+      setSessions(sortedSessions);
     } catch (err) {
       setError('Failed to load saved sessions');
       console.error('Error loading sessions:', err);
