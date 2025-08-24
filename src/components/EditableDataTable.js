@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus, ChevronLeft, ChevronRight, Link } from 'lucide-react';
 import { generateZillowLink } from '../utils/csvProcessor';
 
-const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
+const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty, onColumnStateChange, initialColumnState }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,7 +57,15 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Neighborhood',
     'Rating', 'Good Comp'
   ]);
-
+  
+    // Store initial column configuration for session restoration
+  const [initialColumnConfig, setInitialColumnConfig] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Track previous column state to prevent unnecessary callbacks
+  const prevColumnStateRef = useRef(null);
+  const currentSessionRef = useRef(null);
+  
   // Editable fields configuration - now includes all fields
   const editableFields = useMemo(() => {
     if (localData.length === 0) return [];
@@ -189,6 +197,24 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     if (!Array.isArray(data) || data.length === 0) {
       setLocalData([]);
       return;
+    }
+    
+    // Check if this is a new session load (data structure changed)
+    const currentDataKeys = Object.keys(data[0] || {});
+    const previousDataKeys = Object.keys(localData[0] || {});
+    const isNewSession = currentDataKeys.length > 0 && 
+                        (previousDataKeys.length === 0 || 
+                         JSON.stringify(currentDataKeys.sort()) !== JSON.stringify(previousDataKeys.sort()));
+    
+    // If this is a new session and we have initial column config, restore it
+    if (isNewSession && initialColumnConfig && !isInitializing) {
+      const sessionKey = JSON.stringify(currentDataKeys.sort());
+      if (currentSessionRef.current !== sessionKey) {
+        currentSessionRef.current = sessionKey;
+        setSelectedColumns(initialColumnConfig.selectedColumns);
+        setHiddenColumns(new Set(initialColumnConfig.hiddenColumns));
+        setIsInitializing(false);
+      }
     }
     
     // Ensure every row has default values for Rating, Good Comp, Worth Comparison, and new fields
@@ -576,6 +602,42 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   }, [visibleColumns]);
+
+  // Notify parent component when column state changes
+  useEffect(() => {
+    if (onColumnStateChange && !isInitializing && localData.length > 0) {
+      const currentState = {
+        selectedColumns,
+        hiddenColumns: Array.from(hiddenColumns)
+      };
+      
+      // Only call callback if state actually changed
+      const prevState = prevColumnStateRef.current;
+      if (!prevState || 
+          JSON.stringify(prevState.selectedColumns) !== JSON.stringify(currentState.selectedColumns) ||
+          JSON.stringify(prevState.hiddenColumns) !== JSON.stringify(currentState.hiddenColumns)) {
+        
+        prevColumnStateRef.current = currentState;
+        onColumnStateChange(currentState);
+      }
+    }
+  }, [selectedColumns, hiddenColumns, onColumnStateChange, isInitializing, localData.length]);
+
+  // Handle initial column state from session
+  useEffect(() => {
+    if (initialColumnState && initialColumnState.selectedColumns && initialColumnState.hiddenColumns) {
+      // Set initial column state without triggering change callbacks
+      setIsInitializing(true);
+      setSelectedColumns(initialColumnState.selectedColumns);
+      setHiddenColumns(new Set(initialColumnState.hiddenColumns));
+      setInitialColumnConfig(initialColumnState);
+      // Use setTimeout to ensure state updates complete before setting isInitializing to false
+      setTimeout(() => setIsInitializing(false), 0);
+    } else if (initialColumnState === null) {
+      // No initial state, finish initialization
+      setIsInitializing(false);
+    }
+  }, [initialColumnState]);
 
 
 

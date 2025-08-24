@@ -24,6 +24,9 @@ function App() {
   const [starredPropertyId, setStarredPropertyId] = useState(null);
   const [showStarConfirmModal, setShowStarConfirmModal] = useState(false);
   const [pendingStarProperty, setPendingStarProperty] = useState(null);
+  
+  // Column state management
+  const [currentColumnState, setCurrentColumnState] = useState(null);
 
   const handleFileUpload = async (file) => {
     setIsLoading(true);
@@ -43,6 +46,7 @@ function App() {
       setStarredPropertyId(null); // Reset starred property when loading new data
       setCurrentSessionId(null); // Clear current session when uploading new file
       setCurrentSessionName(null);
+      setCurrentColumnState(null); // Reset column state when uploading new file
       setActiveTab('data');
       setShowSaveModal(true); // Automatically show save modal after successful upload
     } catch (err) {
@@ -94,7 +98,9 @@ function App() {
             description: '', // Keep existing description
             data: recalculatedData,
             stats: updatedStats,
-            starredPropertyId: starredPropertyId
+            starredPropertyId: starredPropertyId,
+            selectedColumns: currentColumnState?.selectedColumns,
+            hiddenColumns: currentColumnState?.hiddenColumns
           });
           console.log('Session automatically updated with merged data');
         } catch (err) {
@@ -123,6 +129,16 @@ function App() {
     exportToCSV(dataToExport, 'processed_real_estate_data.csv');
   };
 
+  const handleColumnStateChange = (columnState) => {
+    setCurrentColumnState(columnState);
+    
+    // If we're working with a loaded session, automatically save column state
+    if (currentSessionId) {
+      // Save column state to session (this will be handled in the next auto-save)
+      console.log('Column state updated:', columnState);
+    }
+  };
+
   const handleDataUpdate = async (updatedData) => {
     // Recalculate Total SQFT and differences with current starred property
     const recalculatedData = calculateComparisons(updatedData, starredPropertyId);
@@ -142,7 +158,9 @@ function App() {
           description: '', // Keep existing description
           data: updatedData,
           stats: updatedStats,
-          starredPropertyId: starredPropertyId
+          starredPropertyId: starredPropertyId,
+          selectedColumns: currentColumnState?.selectedColumns,
+          hiddenColumns: currentColumnState?.hiddenColumns
         });
         console.log('Session automatically updated in database');
       } catch (err) {
@@ -152,7 +170,7 @@ function App() {
     }
   };
 
-  const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null, sessionStarredPropertyId = null) => {
+  const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null, sessionStarredPropertyId = null, selectedColumns = null, hiddenColumns = null) => {
     console.log('Loading session with starredPropertyId:', sessionStarredPropertyId);
     setData(sessionData);
     setCurrentSessionId(sessionId);
@@ -160,6 +178,17 @@ function App() {
     setActiveTab('data');
     // Restore starred property from session
     setStarredPropertyId(sessionStarredPropertyId);
+    
+    // Restore column state from session
+    if (selectedColumns && hiddenColumns) {
+      setCurrentColumnState({
+        selectedColumns,
+        hiddenColumns
+      });
+    } else {
+      // Reset to default column state if none saved
+      setCurrentColumnState(null);
+    }
     
     // Recalculate processed data with the starred property
     if (sessionStarredPropertyId) {
@@ -189,7 +218,9 @@ function App() {
         description: saveForm.description.trim(),
         data: processedData,
         stats: stats,
-        starredPropertyId: starredPropertyId
+        starredPropertyId: starredPropertyId,
+        selectedColumns: currentColumnState?.selectedColumns,
+        hiddenColumns: currentColumnState?.hiddenColumns
       };
       
       console.log('Saving session with starredPropertyId:', starredPropertyId);
@@ -452,6 +483,8 @@ function App() {
                       onDataUpdate={handleDataUpdate}
                       starredPropertyId={starredPropertyId}
                       onStarProperty={handleStarProperty}
+                      onColumnStateChange={handleColumnStateChange}
+                      initialColumnState={currentColumnState}
                     />
                 </div>
               )}
