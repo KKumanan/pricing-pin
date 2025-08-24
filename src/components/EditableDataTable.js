@@ -17,6 +17,12 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   const [selectedRowForZillow, setSelectedRowForZillow] = useState(null);
   const [zillowLinkInput, setZillowLinkInput] = useState('');
   
+  // Bulk edit missing values state
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [bulkEditColumn, setBulkEditColumn] = useState('');
+  const [bulkEditValue, setBulkEditValue] = useState('');
+  const [bulkEditRows, setBulkEditRows] = useState([]);
+  
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
@@ -91,6 +97,52 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     setShowZillowModal(false);
     setSelectedRowForZillow(null);
     setZillowLinkInput('');
+  };
+
+  // Bulk edit missing values functions
+  const openBulkEditModal = (column) => {
+    const rowsWithMissingValues = localData.filter(row => 
+      row[column] === null || row[column] === undefined || row[column] === ''
+    );
+    
+    setBulkEditColumn(column);
+    setBulkEditValue('');
+    setBulkEditRows(rowsWithMissingValues);
+    setShowBulkEditModal(true);
+  };
+
+  const applyBulkEdit = () => {
+    if (!bulkEditColumn || !bulkEditValue.trim()) return;
+    
+    const updatedData = [...localData];
+    let updatedCount = 0;
+    
+    bulkEditRows.forEach(row => {
+      const rowIndex = updatedData.findIndex(r => r['MLS #'] === row['MLS #']);
+      if (rowIndex !== -1) {
+        updatedData[rowIndex] = {
+          ...updatedData[rowIndex],
+          [bulkEditColumn]: bulkEditValue.trim()
+        };
+        updatedCount++;
+      }
+    });
+    
+    if (updatedCount > 0) {
+      setLocalData(updatedData);
+      if (onDataUpdate) {
+        onDataUpdate(updatedData);
+      }
+    }
+    
+    closeBulkEditModal();
+  };
+
+  const closeBulkEditModal = () => {
+    setShowBulkEditModal(false);
+    setBulkEditColumn('');
+    setBulkEditValue('');
+    setBulkEditRows([]);
   };
 
 // Function to add a new row
@@ -513,6 +565,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       const numericValue = value ? value.toString().replace(/[^\d]/g, '') : '';
       setEditValue(numericValue);
     } else {
+      // Handle missing values - start with empty string for editing
       setEditValue(value || '');
     }
   };
@@ -639,10 +692,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const formatValue = (value, key, rowIndex) => {
-    if (value === null || value === undefined) return '-';
-    
     // Check if this cell is being edited
     const isEditing = editingCell && editingCell.rowIndex === rowIndex && editingCell.column === key;
+    
+    // Handle missing values - allow editing for most fields
+    const isMissingValue = value === null || value === undefined || value === '';
     
     if (isEditing) {
       // Special handling for price fields
@@ -1141,13 +1195,46 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       
       return (
         <div 
-          className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${
+          className={`group relative cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${
             value ? 'border-gray-200' : 'border-gray-300 border-dashed'
-          }`}
+          } ${isMissingValue ? 'bg-gray-50 hover:bg-gray-100' : ''}`}
           onClick={() => startEditing(rowIndex, key, value)}
-          title="Click to edit"
+          title={isMissingValue ? "Click to add value" : "Click to edit"}
         >
-          {value || ''}
+          {isMissingValue ? (
+            <span></span>
+          ) : (
+            <span className="flex items-center justify-between">
+              <span className="flex-1">{value}</span>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Clear the value by setting it to empty string
+                  const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
+                  const updatedData = [...localData];
+                  const rowToUpdate = filteredAndSortedData[actualRowIndex];
+                  const originalIndex = localData.findIndex(row => row['MLS #'] === rowToUpdate['MLS #']);
+                  
+                  if (originalIndex !== -1) {
+                    updatedData[originalIndex] = {
+                      ...updatedData[originalIndex],
+                      [key]: ''
+                    };
+                    
+                    setLocalData(updatedData);
+                    if (onDataUpdate) {
+                      onDataUpdate(updatedData);
+                    }
+                  }
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                title="Clear value"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
         </div>
       );
     }
@@ -1198,15 +1285,19 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search properties..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-10"
-          />
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search properties..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
+          </div>
+          
+
         </div>
         
         <div className="flex gap-2">
@@ -1222,6 +1313,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               </span>
             )}
           </button>
+          
+
           
           <button
             onClick={() => setShowColumnManager(true)}
@@ -1319,6 +1412,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               {goodCompFilter !== 'ALL' && ` (Good Comp: ${goodCompFilter})`}
               {statusFilter.size > 0 && ` (Excluding: ${Array.from(statusFilter).join(', ')})`}
             </p>
+            
+
           </div>
         </div>
       )}
@@ -1363,7 +1458,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                 return (
                 <th
                   key={column}
-                  className={`table-header cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)} ${
+                  className={`table-header group cursor-pointer hover:bg-gray-100 transition-colors ${getColumnWidth(column)} ${
                     draggedColumn === column ? 'opacity-50' : ''
                   } ${
                     dragOverColumn === column ? 'bg-blue-100 border-l-2 border-blue-500' : ''
@@ -1381,6 +1476,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                     <GripVertical className="w-3 h-3 text-gray-400 cursor-grab hover:text-gray-600 mr-1" />
                     {getDisplayName(column)}
                     {getSortIcon(column)}
+                    
+                    {/* Bulk edit button for columns with missing values */}
+                    {!['Rating', 'Good Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
+                        'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(column) && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openBulkEditModal(column);
+                        }}
+                        className="ml-2 p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={`Bulk edit missing values for ${getDisplayName(column)}`}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </th>
                 );
@@ -1645,6 +1756,78 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                 disabled={!zillowLinkInput.trim()}
               >
                 Update Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Edit Missing Values Modal */}
+      {showBulkEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Bulk Edit Missing Values</h3>
+              <button
+                onClick={closeBulkEditModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Column: {bulkEditColumn}
+              </label>
+              <p className="text-sm text-gray-600">
+                {bulkEditRows.length} properties have missing values for this field
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Value
+              </label>
+              <input
+                type="text"
+                value={bulkEditValue}
+                onChange={(e) => setBulkEditValue(e.target.value)}
+                placeholder={`Enter value for ${bulkEditColumn}...`}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                autoFocus
+              />
+            </div>
+            
+            <div className="mb-4 max-h-32 overflow-y-auto">
+              <p className="text-sm font-medium text-gray-700 mb-2">Properties to update:</p>
+              <div className="space-y-1">
+                {bulkEditRows.slice(0, 10).map((row, index) => (
+                  <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                    {row['Address'] || `Property ${index + 1}`}
+                  </div>
+                ))}
+                {bulkEditRows.length > 10 && (
+                  <div className="text-sm text-gray-500 italic">
+                    ... and {bulkEditRows.length - 10} more
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeBulkEditModal}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyBulkEdit}
+                className="btn-primary"
+                disabled={!bulkEditValue.trim()}
+              >
+                Update {bulkEditRows.length} Properties
               </button>
             </div>
           </div>
