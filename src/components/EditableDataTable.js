@@ -46,7 +46,6 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   // Horizontal scroll state
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [showScrollNav, setShowScrollNav] = useState(true);
   const tableContainerRef = useRef(null);
   const scrollIntervalRef = useRef(null);
   
@@ -342,14 +341,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     setIsDragging(false);
   };
 
-  // Check scroll position and update navigation buttons
-  const checkScrollPosition = () => {
-    if (tableContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = tableContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  };
+
 
   // Handle horizontal scroll navigation
   const handleScrollLeft = () => {
@@ -358,6 +350,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         left: -300,
         behavior: 'smooth'
       });
+      // Update scroll state after scrolling
+      setTimeout(() => {
+        if (tableContainerRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = tableContainerRef.current;
+          setCanScrollLeft(scrollLeft > 0);
+          setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+        }
+      }, 100);
     }
   };
 
@@ -367,6 +367,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         left: 300,
         behavior: 'smooth'
       });
+      // Update scroll state after scrolling
+      setTimeout(() => {
+        if (tableContainerRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = tableContainerRef.current;
+          setCanScrollLeft(scrollLeft > 0);
+          setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+        }
+      }, 100);
     }
   };
 
@@ -525,19 +533,16 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     return selectedColumns.filter(column => !hiddenColumns.has(column));
   }, [selectedColumns, hiddenColumns]);
 
-  // Add scroll event listener
+  // Check initial scroll position
   useEffect(() => {
-    const container = tableContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScrollPosition);
-      // Initial check with a small delay to ensure table is rendered
-      setTimeout(checkScrollPosition, 100);
-      
-      return () => {
-        container.removeEventListener('scroll', checkScrollPosition);
-      };
+    if (tableContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tableContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
-  }, [visibleColumns]); // Re-check when visible columns change
+  }, [visibleColumns]);
+
+
 
   const startEditing = (rowIndex, column, value) => {
     // Allow editing of all fields except special ones that have their own UI and calculated fields
@@ -1349,6 +1354,38 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
             <Plus className="w-4 h-4" />
             Add New Row
           </button>
+          
+          {/* Horizontal scroll navigation buttons */}
+          {visibleColumns.length > 0 && (
+            <div className="flex gap-1">
+              <button
+                onClick={handleScrollLeft}
+                onMouseDown={() => startContinuousScroll('left')}
+                onMouseUp={stopContinuousScroll}
+                onMouseLeave={stopContinuousScroll}
+                onTouchStart={() => startContinuousScroll('left')}
+                onTouchEnd={stopContinuousScroll}
+                disabled={!canScrollLeft}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Scroll left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleScrollRight}
+                onMouseDown={() => startContinuousScroll('right')}
+                onMouseUp={stopContinuousScroll}
+                onMouseLeave={stopContinuousScroll}
+                onTouchStart={() => startContinuousScroll('right')}
+                onTouchEnd={stopContinuousScroll}
+                disabled={!canScrollRight}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded border border-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Scroll right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1867,59 +1904,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         </div>
       )}
 
-      {/* Floating Horizontal Scroll Navigation */}
-      {visibleColumns.length > 0 && showScrollNav && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-1 relative">
-            <button
-              onClick={handleScrollLeft}
-              onMouseDown={() => startContinuousScroll('left')}
-              onMouseUp={stopContinuousScroll}
-              onMouseLeave={stopContinuousScroll}
-              onTouchStart={() => startContinuousScroll('left')}
-              onTouchEnd={stopContinuousScroll}
-              disabled={!canScrollLeft}
-              className="floating-scroll-button"
-              title="Scroll left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleScrollRight}
-              onMouseDown={() => startContinuousScroll('right')}
-              onMouseUp={stopContinuousScroll}
-              onMouseLeave={stopContinuousScroll}
-              onTouchStart={() => startContinuousScroll('right')}
-              onTouchEnd={stopContinuousScroll}
-              disabled={!canScrollRight}
-              className="floating-scroll-button"
-              title="Scroll right"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowScrollNav(false)}
-              className="absolute -top-1 -right-1 w-5 h-5 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
-              title="Hide scroll navigation"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Show scroll navigation button when hidden */}
-      {visibleColumns.length > 0 && !showScrollNav && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <button
-            onClick={() => setShowScrollNav(true)}
-            className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 hover:bg-gray-50 transition-colors"
-            title="Show scroll navigation"
-          >
-            <ChevronLeft className="w-4 h-4 rotate-180" />
-          </button>
-        </div>
-      )}
     </div>
   );
 };
