@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X, Star, GripVertical, Trash2, AlertTriangle, Settings, Eye, EyeOff, Plus, ChevronLeft, ChevronRight, Link } from 'lucide-react';
 import { generateZillowLink } from '../utils/csvProcessor';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty }) => {
@@ -11,6 +11,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   const [editValue, setEditValue] = useState('');
   const [localData, setLocalData] = useState(data);
   const [showEditableInfo, setShowEditableInfo] = useState(true);
+  
+  // Zillow link update state
+  const [showZillowModal, setShowZillowModal] = useState(false);
+  const [selectedRowForZillow, setSelectedRowForZillow] = useState(null);
+  const [zillowLinkInput, setZillowLinkInput] = useState('');
   
   // Drag and drop state
   const [draggedColumn, setDraggedColumn] = useState(null);
@@ -54,7 +59,39 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     return Object.keys(localData[0]);
   }, [localData]);
 
+  // Zillow link update functions
+  const openZillowModal = (row) => {
+    setSelectedRowForZillow(row);
+    setZillowLinkInput(row['Zillow Link'] || '');
+    setShowZillowModal(true);
+  };
 
+  const updateZillowLink = () => {
+    if (!selectedRowForZillow || !zillowLinkInput.trim()) return;
+    
+    const updatedData = [...localData];
+    const rowIndex = updatedData.findIndex(row => row['MLS #'] === selectedRowForZillow['MLS #']);
+    
+    if (rowIndex !== -1) {
+      updatedData[rowIndex] = {
+        ...updatedData[rowIndex],
+        'Zillow Link': zillowLinkInput.trim()
+      };
+      
+      setLocalData(updatedData);
+      if (onDataUpdate) {
+        onDataUpdate(updatedData);
+      }
+    }
+    
+    closeZillowModal();
+  };
+
+  const closeZillowModal = () => {
+    setShowZillowModal(false);
+    setSelectedRowForZillow(null);
+    setZillowLinkInput('');
+  };
 
 // Function to add a new row
   const addNewRow = () => {
@@ -457,6 +494,13 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         column === 'Price vs EXP' || column === 'Price vs EXP %' || column === 'Is Reference Property' ||
         column === 'Price/SqFt') return;
     
+    // Special handling for Address field - allow editing but don't show the clickable styling
+    if (column === 'Address') {
+      setEditingCell({ rowIndex, column });
+      setEditValue(value || '');
+      return;
+    }
+    
     setEditingCell({ rowIndex, column });
     
     // For price fields, extract the numeric value from formatted currency
@@ -689,21 +733,76 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    // Make Address a hyperlink to Zillow
+    // Make Address a hyperlink to Zillow with update button
     if (key === 'Address' && typeof value === 'string') {
-      const zillowLink = data.find(row => row['Address'] === value)?.['Zillow Link'];
-      if (zillowLink) {
+      // Check if this cell is being edited
+      const isEditing = editingCell && editingCell.rowIndex === rowIndex && editingCell.column === key;
+      
+      if (isEditing) {
         return (
-          <a 
-            href={zillowLink} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary-600 hover:text-primary-700 underline font-medium"
-          >
-            {value}
-          </a>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyPress}
+              onBlur={saveEdit}
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+              autoFocus
+              placeholder="Enter address..."
+            />
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                saveEdit();
+              }}
+              className="flex-shrink-0 p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+              title="Save address"
+            >
+              <Save className="w-4 h-4" />
+            </button>
+          </div>
         );
       }
+      
+      const zillowLink = data.find(row => row['Address'] === value)?.['Zillow Link'];
+      const row = paginatedData[rowIndex];
+      
+      return (
+        <div className="flex items-center gap-2">
+          <span 
+            className="flex-1 min-w-0 cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border border-gray-200"
+            onClick={() => startEditing(rowIndex, key, value)}
+            title="Click to edit address"
+          >
+            {zillowLink ? (
+              <a 
+                href={zillowLink} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:text-primary-700 underline font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {value}
+              </a>
+            ) : (
+              <span className="text-gray-900">{value}</span>
+            )}
+          </span>
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openZillowModal(row);
+            }}
+            className="flex-shrink-0 p-1 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+            title="Update Zillow link"
+          >
+            <Link className="w-4 h-4" />
+          </button>
+        </div>
+      );
     }
     
     // Custom Close Price indicator logic (must come before generic price formatting)
@@ -1035,6 +1134,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     // For editable fields, make them clickable (all fields except special ones and calculated fields)
     if (!['Rating', 'Good Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
            'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(key)) {
+      // Don't make Address clickable since it has its own special handling with the Zillow link button
+      if (key === 'Address') {
+        return value || '';
+      }
+      
       return (
         <div 
           className={`cursor-pointer hover:bg-gray-100 hover:border-primary-300 px-2 py-1 rounded -mx-2 -my-1 transition-colors border ${
@@ -1485,6 +1589,62 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                 className="btn-primary"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zillow Link Update Modal */}
+      {showZillowModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Update Zillow Link</h3>
+              <button
+                onClick={closeZillowModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property Address
+              </label>
+              <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded border">
+                {selectedRowForZillow?.['Address'] || 'N/A'}
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Zillow Link
+              </label>
+              <input
+                type="url"
+                value={zillowLinkInput}
+                onChange={(e) => setZillowLinkInput(e.target.value)}
+                placeholder="https://www.zillow.com/homedetails/..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={closeZillowModal}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updateZillowLink}
+                className="btn-primary"
+                disabled={!zillowLinkInput.trim()}
+              >
+                Update Link
               </button>
             </div>
           </div>
