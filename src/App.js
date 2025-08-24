@@ -130,12 +130,13 @@ function App() {
   };
 
   const handleColumnStateChange = (columnState) => {
+    console.log('App: Column state changed:', columnState);
     setCurrentColumnState(columnState);
     
     // If we're working with a loaded session, automatically save column state
     if (currentSessionId) {
       // Save column state to session (this will be handled in the next auto-save)
-      console.log('Column state updated:', columnState);
+      console.log('App: Column state updated for session:', columnState);
     }
   };
 
@@ -172,6 +173,7 @@ function App() {
 
   const handleLoadSession = (sessionData, sessionStats, sessionId = null, sessionName = null, sessionStarredPropertyId = null, selectedColumns = null, hiddenColumns = null) => {
     console.log('Loading session with starredPropertyId:', sessionStarredPropertyId);
+    console.log('Loading session with column state:', { selectedColumns, hiddenColumns });
     setData(sessionData);
     setCurrentSessionId(sessionId);
     setCurrentSessionName(sessionName);
@@ -181,12 +183,14 @@ function App() {
     
     // Restore column state from session
     if (selectedColumns && hiddenColumns) {
+      console.log('Restoring column state from session:', { selectedColumns, hiddenColumns });
       setCurrentColumnState({
         selectedColumns,
         hiddenColumns
       });
     } else {
       // Reset to default column state if none saved
+      console.log('No column state found in session, resetting to default');
       setCurrentColumnState(null);
     }
     
@@ -266,7 +270,9 @@ function App() {
             description: '', // Keep existing description
             data: data,
             stats: updatedStats,
-            starredPropertyId: null
+            starredPropertyId: null,
+            selectedColumns: currentColumnState?.selectedColumns,
+            hiddenColumns: currentColumnState?.hiddenColumns
           });
           console.log('Session automatically updated in database');
         } catch (err) {
@@ -316,7 +322,9 @@ function App() {
           description: '', // Keep existing description
           data: data,
           stats: updatedStats,
-          starredPropertyId: pendingStarProperty['MLS #']
+          starredPropertyId: pendingStarProperty['MLS #'],
+          selectedColumns: currentColumnState?.selectedColumns,
+          hiddenColumns: currentColumnState?.hiddenColumns
         });
         console.log('Session automatically updated in database');
       } catch (err) {

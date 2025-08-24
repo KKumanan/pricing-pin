@@ -49,18 +49,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   const tableContainerRef = useRef(null);
   const scrollIntervalRef = useRef(null);
   
-  const [selectedColumns, setSelectedColumns] = useState([
+  // Default column configuration - will be overridden by initialColumnState if provided
+  const defaultColumns = [
     'Address', 'Status', 'List Price', 'Close Price', 'Worth Comparison',
     'Above Grade Finished SQFT', 'Price/SqFt', 'LOT SQFT', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
     'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
     'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Neighborhood',
     'Rating', 'Good Comp'
-  ]);
+  ];
+  
+  const [selectedColumns, setSelectedColumns] = useState([]);
   
     // Store initial column configuration for session restoration
   const [initialColumnConfig, setInitialColumnConfig] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [hasRestoredColumnState, setHasRestoredColumnState] = useState(false);
   
   // Track previous column state to prevent unnecessary callbacks
   const prevColumnStateRef = useRef(null);
@@ -206,14 +210,28 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                         (previousDataKeys.length === 0 || 
                          JSON.stringify(currentDataKeys.sort()) !== JSON.stringify(previousDataKeys.sort()));
     
-    // If this is a new session and we have initial column config, restore it
-    if (isNewSession && initialColumnConfig && !isInitializing) {
+    console.log('EditableDataTable: Data useEffect - checking session:', {
+      isNewSession,
+      hasInitialColumnState: !!initialColumnState,
+      isInitializing,
+      hasRestoredColumnState,
+      currentDataKeys: currentDataKeys.length,
+      previousDataKeys: previousDataKeys.length
+    });
+    
+    // If this is a new session and we have initial column state, restore it
+    if (isNewSession && initialColumnState && !isInitializing && !hasRestoredColumnState) {
       const sessionKey = JSON.stringify(currentDataKeys.sort());
       if (currentSessionRef.current !== sessionKey) {
         currentSessionRef.current = sessionKey;
-        setSelectedColumns(initialColumnConfig.selectedColumns);
-        setHiddenColumns(new Set(initialColumnConfig.hiddenColumns));
-        setIsInitializing(false);
+        console.log('EditableDataTable: Restoring column state from data change:', {
+          selectedColumns: initialColumnState.selectedColumns,
+          hiddenColumns: initialColumnState.hiddenColumns
+        });
+        setSelectedColumns(initialColumnState.selectedColumns);
+        setHiddenColumns(new Set(initialColumnState.hiddenColumns));
+        setHasRestoredColumnState(true);
+        // Don't set isInitializing to false here as it might interfere with the column state restoration
       }
     }
     
@@ -248,7 +266,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       };
     });
     setLocalData(dataWithDefaults);
-  }, [data]);
+  }, [data, initialColumnState, isInitializing, hasRestoredColumnState]);
 
   // Get all available columns
   const allColumns = useMemo(() => {
@@ -388,6 +406,12 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       newColumns.splice(draggedIndex, 1);
       // Insert dragged column at target position
       newColumns.splice(targetIndex, 0, draggedColumn);
+      
+      console.log('EditableDataTable: Column reordered:', {
+        from: draggedColumn,
+        to: targetColumn,
+        newOrder: newColumns
+      });
       
       setSelectedColumns(newColumns);
     }
@@ -544,6 +568,13 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     } else {
       newHiddenColumns.add(column);
     }
+    
+    console.log('EditableDataTable: Column visibility toggled:', {
+      column,
+      isHidden: newHiddenColumns.has(column),
+      newHiddenColumns: Array.from(newHiddenColumns)
+    });
+    
     setHiddenColumns(newHiddenColumns);
   };
 
@@ -605,6 +636,15 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
 
   // Notify parent component when column state changes
   useEffect(() => {
+    console.log('EditableDataTable: Column state change effect triggered:', {
+      onColumnStateChange: !!onColumnStateChange,
+      isInitializing,
+      localDataLength: localData.length,
+      selectedColumnsLength: selectedColumns.length,
+      hiddenColumnsLength: hiddenColumns.size,
+      hasRestoredColumnState
+    });
+    
     if (onColumnStateChange && !isInitializing && localData.length > 0) {
       const currentState = {
         selectedColumns,
@@ -613,29 +653,71 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       
       // Only call callback if state actually changed
       const prevState = prevColumnStateRef.current;
+      console.log('EditableDataTable: Checking column state change:', {
+        prevState,
+        currentState,
+        hasPrevState: !!prevState,
+        selectedColumnsChanged: prevState ? JSON.stringify(prevState.selectedColumns) !== JSON.stringify(currentState.selectedColumns) : 'no prev state',
+        hiddenColumnsChanged: prevState ? JSON.stringify(prevState.hiddenColumns) !== JSON.stringify(currentState.hiddenColumns) : 'no prev state'
+      });
+      
       if (!prevState || 
           JSON.stringify(prevState.selectedColumns) !== JSON.stringify(currentState.selectedColumns) ||
           JSON.stringify(prevState.hiddenColumns) !== JSON.stringify(currentState.hiddenColumns)) {
         
+        console.log('EditableDataTable: Column state changed, notifying parent:', currentState);
         prevColumnStateRef.current = currentState;
         onColumnStateChange(currentState);
+      } else {
+        console.log('EditableDataTable: Column state unchanged, skipping callback');
       }
+    } else {
+      console.log('EditableDataTable: Skipping column state change callback:', {
+        hasCallback: !!onColumnStateChange,
+        isInitializing,
+        hasData: localData.length > 0,
+        reason: !onColumnStateChange ? 'no callback' : isInitializing ? 'initializing' : 'no data'
+      });
     }
-  }, [selectedColumns, hiddenColumns, onColumnStateChange, isInitializing, localData.length]);
+  }, [selectedColumns, hiddenColumns, onColumnStateChange, isInitializing, localData.length, hasRestoredColumnState]);
 
   // Handle initial column state from session
   useEffect(() => {
+    console.log('EditableDataTable: initialColumnState changed:', initialColumnState);
+    
+    // Reset restoration flag when initialColumnState changes
+    setHasRestoredColumnState(false);
+    
     if (initialColumnState && initialColumnState.selectedColumns && initialColumnState.hiddenColumns) {
       // Set initial column state without triggering change callbacks
       setIsInitializing(true);
       setSelectedColumns(initialColumnState.selectedColumns);
       setHiddenColumns(new Set(initialColumnState.hiddenColumns));
       setInitialColumnConfig(initialColumnState);
+      setHasRestoredColumnState(true);
+      console.log('EditableDataTable: Restored column state:', {
+        selectedColumns: initialColumnState.selectedColumns,
+        hiddenColumns: initialColumnState.hiddenColumns
+      });
       // Use setTimeout to ensure state updates complete before setting isInitializing to false
-      setTimeout(() => setIsInitializing(false), 0);
+      setTimeout(() => {
+        console.log('EditableDataTable: Setting isInitializing to false after timeout');
+        setIsInitializing(false);
+      }, 0);
+      
+      // Fallback: ensure isInitializing is set to false after 1 second
+      setTimeout(() => {
+        if (isInitializing) {
+          console.log('EditableDataTable: Fallback timeout - setting isInitializing to false');
+          setIsInitializing(false);
+        }
+      }, 1000);
     } else if (initialColumnState === null) {
-      // No initial state, finish initialization
+      // No initial state, set default columns and finish initialization
+      setSelectedColumns(defaultColumns);
+      setHiddenColumns(new Set());
       setIsInitializing(false);
+      console.log('EditableDataTable: No initial state, using default columns:', defaultColumns);
     }
   }, [initialColumnState]);
 

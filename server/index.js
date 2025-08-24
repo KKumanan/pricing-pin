@@ -165,15 +165,24 @@ class B2Database {
     // Download session data
     const sessionData = await this.downloadFile(session.dataFileName);
     
-    return {
+    const result = {
       ...session,
       data: sessionData
     };
+    
+    console.log('B2Database: Returning session with column state:', {
+      id: result.id,
+      name: result.name,
+      selectedColumns: result.selectedColumns ? `${result.selectedColumns.length} columns` : 'none',
+      hiddenColumns: result.hiddenColumns ? `${result.hiddenColumns.length} columns` : 'none'
+    });
+    
+    return result;
   }
 
   // Create a new session
   async createSession(sessionData) {
-    const { name, description, data, stats, starredPropertyId } = sessionData;
+    const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = sessionData;
     
     if (!name || !data) {
       throw new Error('Name and data are required');
@@ -195,9 +204,16 @@ class B2Database {
       dataFileName,
       stats,
       starredPropertyId,
+      selectedColumns,
+      hiddenColumns,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    
+    console.log('B2Database: Creating session with column state:', {
+      selectedColumns: selectedColumns ? `${selectedColumns.length} columns` : 'none',
+      hiddenColumns: hiddenColumns ? `${hiddenColumns.length} columns` : 'none'
+    });
     
     // Add to sessions index
     sessionsIndex.sessions.push(newSession);
@@ -212,7 +228,7 @@ class B2Database {
 
   // Update an existing session
   async updateSession(id, sessionData) {
-    const { name, description, data, stats, starredPropertyId } = sessionData;
+    const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = sessionData;
     
     if (!name || !data) {
       throw new Error('Name and data are required');
@@ -237,8 +253,15 @@ class B2Database {
       description: description || session.description,
       stats,
       starredPropertyId,
+      selectedColumns,
+      hiddenColumns,
       updated_at: new Date().toISOString()
     };
+    
+    console.log('B2Database: Updating session with column state:', {
+      selectedColumns: selectedColumns ? `${selectedColumns.length} columns` : 'none',
+      hiddenColumns: hiddenColumns ? `${hiddenColumns.length} columns` : 'none'
+    });
     
     await this.updateSessionsIndex(sessionsIndex);
     
@@ -341,9 +364,15 @@ app.get('/api/sessions/:id', async (req, res) => {
 
 // Save a new session
 app.post('/api/sessions', async (req, res) => {
-  const { name, description, data, stats, starredPropertyId } = req.body;
+  const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = req.body;
 
-  console.log('Received session data:', { name, description, starredPropertyId });
+  console.log('Received session data:', { 
+    name, 
+    description, 
+    starredPropertyId, 
+    selectedColumns: selectedColumns ? `${selectedColumns.length} columns` : 'none',
+    hiddenColumns: hiddenColumns ? `${hiddenColumns.length} columns` : 'none'
+  });
 
   try {
     const result = await b2db.createSession({
@@ -351,7 +380,9 @@ app.post('/api/sessions', async (req, res) => {
       description,
       data,
       stats,
-      starredPropertyId
+      starredPropertyId,
+      selectedColumns,
+      hiddenColumns
     });
     
     console.log('Session saved with starredPropertyId:', starredPropertyId);
@@ -365,9 +396,16 @@ app.post('/api/sessions', async (req, res) => {
 // Update an existing session
 app.put('/api/sessions/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, description, data, stats, starredPropertyId } = req.body;
+  const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = req.body;
 
-  console.log('Updating session data:', { id, name, description, starredPropertyId });
+  console.log('Updating session data:', { 
+    id, 
+    name, 
+    description, 
+    starredPropertyId, 
+    selectedColumns: selectedColumns ? `${selectedColumns.length} columns` : 'none',
+    hiddenColumns: hiddenColumns ? `${hiddenColumns.length} columns` : 'none'
+  });
 
   try {
     const result = await b2db.updateSession(id, {
@@ -375,7 +413,9 @@ app.put('/api/sessions/:id', async (req, res) => {
       description,
       data,
       stats,
-      starredPropertyId
+      starredPropertyId,
+      selectedColumns,
+      hiddenColumns
     });
     
     console.log('Session updated with starredPropertyId:', starredPropertyId);
