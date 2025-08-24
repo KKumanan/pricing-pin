@@ -256,6 +256,19 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           }
         }
         
+        // Special handling for Worth Comparison column
+        if (sortConfig.key === 'Worth Comparison') {
+          const worthOrder = { 'Worth Less': 1, 'About the Same': 2, 'Worth More': 3, 'Not Set': 4 };
+          const aOrder = worthOrder[aVal] || 4; // Any other value goes last
+          const bOrder = worthOrder[bVal] || 4;
+          
+          if (sortConfig.direction === 'asc') {
+            return aOrder - bOrder;
+          } else {
+            return bOrder - aOrder;
+          }
+        }
+        
         if (typeof aVal === 'number' && typeof bVal === 'number') {
           return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
         }
@@ -1130,11 +1143,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       const getWorthComparisonColor = (worthValue) => {
         switch (worthValue) {
           case 'Worth More':
-            return 'bg-green-100 text-green-800 hover:bg-green-200';
+            return 'bg-red-100 text-red-800 hover:bg-red-200';
           case 'About the Same':
             return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
           case 'Worth Less':
-            return 'bg-red-100 text-red-800 hover:bg-red-200';
+            return 'bg-green-100 text-green-800 hover:bg-green-200';
           default:
             return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
         }
