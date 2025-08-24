@@ -185,44 +185,66 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
 
   // Update local data when props change
   React.useEffect(() => {
+    // Ensure data is valid and has the expected structure
+    if (!Array.isArray(data) || data.length === 0) {
+      setLocalData([]);
+      return;
+    }
+    
     // Ensure every row has default values for Rating, Good Comp, Worth Comparison, and new fields
-    const dataWithDefaults = data.map(row => ({
-      ...row,
-      Rating: row.Rating === undefined || row.Rating === null ? 0 : row.Rating,
-      'Good Comp': row['Good Comp'] === undefined || row['Good Comp'] === null ? 'NO' : row['Good Comp'],
-      'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison'],
-      'Upper Level Bedrooms': row['Upper Level Bedrooms'] === undefined || row['Upper Level Bedrooms'] === null ? '' : row['Upper Level Bedrooms'],
-      'Upper Level Full Baths': row['Upper Level Full Baths'] === undefined || row['Upper Level Full Baths'] === null ? '' : row['Upper Level Full Baths'],
-      'Main Level Bedrooms': row['Main Level Bedrooms'] === undefined || row['Main Level Bedrooms'] === null ? '' : row['Main Level Bedrooms'],
-      'Main Level Full Baths': row['Main Level Full Baths'] === undefined || row['Main Level Full Baths'] === null ? '' : row['Main Level Full Baths'],
-      'Lower Level Bedrooms': row['Lower Level Bedrooms'] === undefined || row['Lower Level Bedrooms'] === null ? '' : row['Lower Level Bedrooms'],
-      'Lower Level Full Baths': row['Lower Level Full Baths'] === undefined || row['Lower Level Full Baths'] === null ? '' : row['Lower Level Full Baths'],
-      'KITCHEN': row['KITCHEN'] === undefined || row['KITCHEN'] === null ? '' : row['KITCHEN'],
-      'EXTERIOR': row['EXTERIOR'] === undefined || row['EXTERIOR'] === null ? '' : row['EXTERIOR'],
-      'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] === undefined || row['PRIMARY BATHROOM'] === null ? '' : row['PRIMARY BATHROOM'],
-      '2 Story Family Room': row['2 Story Family Room'] === undefined || row['2 Story Family Room'] === null ? '' : row['2 Story Family Room'],
-      'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
-      'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
-      'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
-      'Neighborhood': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
-      'LOT SQFT': row['LOT SQFT'] === undefined || row['LOT SQFT'] === null ? '' : row['LOT SQFT']
-    }));
+    const dataWithDefaults = data.map(row => {
+      // Ensure row is an object
+      if (!row || typeof row !== 'object') {
+        console.warn('Invalid row data:', row);
+        return {};
+      }
+      
+      return {
+        ...row,
+        Rating: row.Rating === undefined || row.Rating === null ? 0 : row.Rating,
+        'Good Comp': row['Good Comp'] === undefined || row['Good Comp'] === null ? 'NO' : row['Good Comp'],
+        'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison'],
+        'Upper Level Bedrooms': row['Upper Level Bedrooms'] === undefined || row['Upper Level Bedrooms'] === null ? '' : row['Upper Level Bedrooms'],
+        'Upper Level Full Baths': row['Upper Level Full Baths'] === undefined || row['Upper Level Full Baths'] === null ? '' : row['Upper Level Full Baths'],
+        'Main Level Bedrooms': row['Main Level Bedrooms'] === undefined || row['Main Level Bedrooms'] === null ? '' : row['Main Level Bedrooms'],
+        'Main Level Full Baths': row['Main Level Full Baths'] === undefined || row['Main Level Full Baths'] === null ? '' : row['Main Level Full Baths'],
+        'Lower Level Bedrooms': row['Lower Level Bedrooms'] === undefined || row['Lower Level Bedrooms'] === null ? '' : row['Lower Level Bedrooms'],
+        'Lower Level Full Baths': row['Lower Level Full Baths'] === undefined || row['Lower Level Full Baths'] === null ? '' : row['Lower Level Full Baths'],
+        'KITCHEN': row['KITCHEN'] === undefined || row['KITCHEN'] === null ? '' : row['KITCHEN'],
+        'EXTERIOR': row['EXTERIOR'] === undefined || row['EXTERIOR'] === null ? '' : row['EXTERIOR'],
+        'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] === undefined || row['PRIMARY BATHROOM'] === null ? '' : row['PRIMARY BATHROOM'],
+        '2 Story Family Room': row['2 Story Family Room'] === undefined || row['2 Story Family Room'] === null ? '' : row['2 Story Family Room'],
+        'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
+        'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
+        'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
+        'Neighborhood': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
+        'LOT SQFT': row['LOT SQFT'] === undefined || row['LOT SQFT'] === null ? '' : row['LOT SQFT']
+      };
+    });
     setLocalData(dataWithDefaults);
   }, [data]);
 
   // Get all available columns
   const allColumns = useMemo(() => {
     if (localData.length === 0) return [];
-    return Object.keys(localData[0]);
+    const firstRow = localData[0];
+    if (!firstRow || typeof firstRow !== 'object') return [];
+    return Object.keys(firstRow);
   }, [localData]);
 
   // Filter and sort data
   const filteredAndSortedData = useMemo(() => {
     let filtered = localData.filter(item => {
       // Search term filter
-      const matchesSearch = Object.values(item).some(value =>
-        value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const matchesSearch = Object.values(item).some(value => {
+        if (value === null || value === undefined) return false;
+        try {
+          return value.toString().toLowerCase().includes(searchTerm.toLowerCase());
+        } catch (error) {
+          console.warn('Error during search:', error, 'value:', value);
+          return false;
+        }
+      });
       
       // Good Comp filter
       const matchesGoodComp = goodCompFilter === 'ALL' || 
@@ -715,6 +737,12 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     
     // Handle missing values - allow editing for most fields
     const isMissingValue = value === null || value === undefined || value === '';
+    
+    // Ensure key is a string to prevent errors
+    if (typeof key !== 'string') {
+      console.warn('formatValue received non-string key:', key);
+      return '';
+    }
     
     if (isEditing) {
       // Special handling for price fields
@@ -1257,6 +1285,10 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
+    // Handle null/undefined values safely
+    if (value === null || value === undefined) {
+      return '';
+    }
     return value.toString();
   };
 
