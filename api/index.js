@@ -153,7 +153,9 @@ class B2Database {
       created_at: session.created_at,
       updated_at: session.updated_at,
       stats: session.stats,
-      starredPropertyId: session.starredPropertyId
+      starredPropertyId: session.starredPropertyId,
+      selectedColumns: session.selectedColumns,
+      hiddenColumns: session.hiddenColumns
     }));
   }
 
@@ -177,7 +179,7 @@ class B2Database {
 
   // Create a new session
   async createSession(sessionData) {
-    const { name, description, data, stats, starredPropertyId } = sessionData;
+    const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = sessionData;
     
     if (!name || !data) {
       throw new Error('Name and data are required');
@@ -199,6 +201,8 @@ class B2Database {
       dataFileName,
       stats,
       starredPropertyId,
+      selectedColumns,
+      hiddenColumns,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -216,7 +220,7 @@ class B2Database {
 
   // Update an existing session
   async updateSession(id, sessionData) {
-    const { name, description, data, stats, starredPropertyId } = sessionData;
+    const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = sessionData;
     
     if (!name || !data) {
       throw new Error('Name and data are required');
@@ -241,6 +245,8 @@ class B2Database {
       description: description || session.description,
       stats,
       starredPropertyId,
+      selectedColumns,
+      hiddenColumns,
       updated_at: new Date().toISOString()
     };
     
@@ -345,7 +351,7 @@ app.get('/api/sessions/:id', async (req, res) => {
 
 // Save a new session
 app.post('/api/sessions', async (req, res) => {
-  const { name, description, data, stats, starredPropertyId } = req.body;
+  const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = req.body;
 
   console.log('Received session data:', { name, description, starredPropertyId });
 
@@ -355,7 +361,9 @@ app.post('/api/sessions', async (req, res) => {
       description,
       data,
       stats,
-      starredPropertyId
+      starredPropertyId,
+      selectedColumns,
+      hiddenColumns
     });
     
     console.log('Session saved with starredPropertyId:', starredPropertyId);
@@ -369,7 +377,7 @@ app.post('/api/sessions', async (req, res) => {
 // Update an existing session
 app.put('/api/sessions/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, description, data, stats, starredPropertyId } = req.body;
+  const { name, description, data, stats, starredPropertyId, selectedColumns, hiddenColumns } = req.body;
 
   console.log('Updating session data:', { id, name, description, starredPropertyId });
 
@@ -379,7 +387,9 @@ app.put('/api/sessions/:id', async (req, res) => {
       description,
       data,
       stats,
-      starredPropertyId
+      starredPropertyId,
+      selectedColumns,
+      hiddenColumns
     });
     
     console.log('Session updated with starredPropertyId:', starredPropertyId);
