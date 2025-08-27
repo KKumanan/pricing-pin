@@ -28,7 +28,7 @@ const existingData = [
     'BELOW GRADE SQFT': 0,
     'SUBDIVISION': 'Downtown',
     'LOT SQFT': 5000,
-    'Good Comp': 'Yes',
+    'Best Comp': 'Yes',
     'Worth Comparison': 'Yes'
   },
   {
@@ -56,7 +56,7 @@ const existingData = [
     'BELOW GRADE SQFT': 1000,
     'SUBDIVISION': 'Suburban Heights',
     'LOT SQFT': 8000,
-    'Good Comp': 'Yes',
+    'Best Comp': 'Yes',
     'Worth Comparison': 'Yes'
   }
 ];
@@ -87,7 +87,7 @@ const newData = [
     'BELOW GRADE SQFT': 0,
     'SUBDIVISION': 'First Time Buyers',
     'LOT SQFT': 4000,
-    'Good Comp': 'No',
+    'Best Comp': 'No',
     'Worth Comparison': 'No'
   },
   {
@@ -115,7 +115,7 @@ const newData = [
     'BELOW GRADE SQFT': 0,
     'SUBDIVISION': 'Downtown',
     'LOT SQFT': 5000,
-    'Good Comp': 'Yes',
+    'Best Comp': 'Yes',
     'Worth Comparison': 'Yes'
   },
   {
@@ -143,7 +143,7 @@ const newData = [
     'BELOW GRADE SQFT': 2000,
     'SUBDIVISION': 'Luxury Estates',
     'LOT SQFT': 15000,
-    'Good Comp': 'Yes',
+    'Best Comp': 'Yes',
     'Worth Comparison': 'Yes'
   }
 ];

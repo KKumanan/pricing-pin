@@ -40,7 +40,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
-  const [goodCompFilter, setGoodCompFilter] = useState('ALL'); // 'ALL', 'YES', 'NO'
+  const [bestCompFilter, setBestCompFilter] = useState('ALL'); // 'ALL', 'YES', 'NO'
   const [statusFilter, setStatusFilter] = useState(new Set()); // Set of statuses to exclude
   
   // Horizontal scroll state
@@ -56,7 +56,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
     'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Neighborhood',
-    'Rating', 'Good Comp'
+    'Rating', 'Best Comp'
   ];
   
   const [selectedColumns, setSelectedColumns] = useState([]);
@@ -173,7 +173,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         newRow[key] = (maxMls + 1).toString();
       } else if (key === 'Rating') {
         newRow[key] = 0;
-      } else if (key === 'Good Comp') {
+      } else if (key === 'Best Comp') {
         newRow[key] = 'NO';
       } else if (key === 'Worth Comparison') {
         newRow[key] = 'Not Set';
@@ -235,7 +235,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       }
     }
     
-    // Ensure every row has default values for Rating, Good Comp, Worth Comparison, and new fields
+            // Ensure every row has default values for Rating, Best Comp, Worth Comparison, and new fields
     const dataWithDefaults = data.map(row => {
       // Ensure row is an object
       if (!row || typeof row !== 'object') {
@@ -246,7 +246,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       return {
         ...row,
         Rating: row.Rating === undefined || row.Rating === null ? 0 : row.Rating,
-        'Good Comp': row['Good Comp'] === undefined || row['Good Comp'] === null ? 'NO' : row['Good Comp'],
+        'Best Comp': row['Best Comp'] === undefined || row['Best Comp'] === null ? 'NO' : row['Best Comp'],
         'Worth Comparison': row['Worth Comparison'] === undefined || row['Worth Comparison'] === null ? 'Not Set' : row['Worth Comparison'],
         'Upper Level Bedrooms': row['Upper Level Bedrooms'] === undefined || row['Upper Level Bedrooms'] === null ? '' : row['Upper Level Bedrooms'],
         'Upper Level Full Baths': row['Upper Level Full Baths'] === undefined || row['Upper Level Full Baths'] === null ? '' : row['Upper Level Full Baths'],
@@ -290,15 +290,15 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         }
       });
       
-      // Good Comp filter
-      const matchesGoodComp = goodCompFilter === 'ALL' || 
-        (goodCompFilter === 'YES' && item['Good Comp'] === 'YES') ||
-        (goodCompFilter === 'NO' && item['Good Comp'] === 'NO');
+      // Best Comp filter
+      const matchesBestComp = bestCompFilter === 'ALL' || 
+        (bestCompFilter === 'YES' && item['Best Comp'] === 'YES') ||
+        (bestCompFilter === 'NO' && item['Best Comp'] === 'NO');
       
       // Status filter (exclude selected statuses)
       const matchesStatus = !statusFilter.has(item['Status']);
       
-      return matchesSearch && matchesGoodComp && matchesStatus;
+      return matchesSearch && matchesBestComp && matchesStatus;
     });
 
     if (sortConfig.key) {
@@ -351,7 +351,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     }
 
     return filtered;
-  }, [localData, searchTerm, sortConfig, goodCompFilter, statusFilter]);
+  }, [localData, searchTerm, sortConfig, bestCompFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
@@ -587,8 +587,8 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   // Filter handlers
-  const handleGoodCompFilterChange = (value) => {
-    setGoodCompFilter(value);
+  const handleBestCompFilterChange = (value) => {
+    setBestCompFilter(value);
     setCurrentPage(1); // Reset to first page when filter changes
   };
 
@@ -604,7 +604,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const handleClearFilters = () => {
-    setGoodCompFilter('ALL');
+    setBestCompFilter('ALL');
     setStatusFilter(new Set());
     setCurrentPage(1);
   };
@@ -725,7 +725,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
 
   const startEditing = (rowIndex, column, value) => {
     // Allow editing of all fields except special ones that have their own UI and calculated fields
-    if (column === 'Rating' || column === 'Good Comp' || column === 'Worth Comparison' || column === 'Status' ||
+    if (column === 'Rating' || column === 'Best Comp' || column === 'Worth Comparison' || column === 'Status' ||
         column === 'Sq Ft Difference vs EXP' || column === 'Lot Difference vs EXP' ||
         column === 'Price vs EXP' || column === 'Price vs EXP %' || column === 'Is Reference Property' ||
         column === 'Price/SqFt') return;
@@ -1197,22 +1197,22 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    // Special handling for Good Comp column
-    if (key === 'Good Comp') {
-      const isGoodComp = value === 'YES' || value === true || value === 'yes';
+    // Special handling for Best Comp column
+    if (key === 'Best Comp') {
+      const isBestComp = value === 'YES' || value === true || value === 'yes';
       return (
         <div className="flex items-center justify-center">
           <button
             type="button"
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              isGoodComp 
+              isBestComp 
                 ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              const newValue = isGoodComp ? 'NO' : 'YES';
+              const newValue = isBestComp ? 'NO' : 'YES';
               const actualRowIndex = (currentPage - 1) * itemsPerPage + rowIndex;
               const updatedData = [...localData];
               
@@ -1223,7 +1223,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               if (originalIndex !== -1) {
                 updatedData[originalIndex] = {
                   ...updatedData[originalIndex],
-                  'Good Comp': newValue
+                  'Best Comp': newValue
                 };
                 
                 setLocalData(updatedData);
@@ -1233,7 +1233,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               }
             }}
           >
-            {isGoodComp ? 'YES' : 'NO'}
+            {isBestComp ? 'YES' : 'NO'}
           </button>
         </div>
       );
@@ -1376,7 +1376,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     }
     
     // For editable fields, make them clickable (all fields except special ones and calculated fields)
-    if (!['Rating', 'Good Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
+          if (!['Rating', 'Best Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
            'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(key)) {
       // Don't make Address clickable since it has its own special handling with the Zillow link button
       if (key === 'Address') {
@@ -1452,7 +1452,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       'GARAGE SPACES': 'Garage Spaces',
       'PRIMARY BATHROOM': 'Primary Bathroom',
       '2 Story Family Room': '2 Story Family Room',
-      'Good Comp': 'Good Comp',
+      'Best Comp': 'Best Comp',
       'Subdivision/Neighborhood': 'Neighborhood'
     };
     return displayNames[columnName] || columnName;
@@ -1501,9 +1501,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           >
             <Filter className="w-4 h-4" />
             Filters
-            {(goodCompFilter !== 'ALL' || statusFilter.size > 0) && (
+            {(bestCompFilter !== 'ALL' || statusFilter.size > 0) && (
               <span className="bg-primary-600 text-white text-xs rounded-full px-2 py-1 ml-1">
-                {(goodCompFilter !== 'ALL' ? 1 : 0) + statusFilter.size}
+                {(bestCompFilter !== 'ALL' ? 1 : 0) + statusFilter.size}
               </span>
             )}
           </button>
@@ -1594,14 +1594,14 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Good Comp Filter */}
+            {/* Best Comp Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Good Comp Filter
+                Best Comp Filter
               </label>
               <select
-                value={goodCompFilter}
-                onChange={(e) => handleGoodCompFilterChange(e.target.value)}
+                value={bestCompFilter}
+                onChange={(e) => handleBestCompFilterChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="ALL">Show All</option>
@@ -1635,7 +1635,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Showing {filteredAndSortedData.length} of {localData.length} properties
-              {goodCompFilter !== 'ALL' && ` (Good Comp: ${goodCompFilter})`}
+              {bestCompFilter !== 'ALL' && ` (Best Comp: ${bestCompFilter})`}
               {statusFilter.size > 0 && ` (Excluding: ${Array.from(statusFilter).join(', ')})`}
             </p>
             
@@ -1677,7 +1677,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                                           if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
                       if (col === 'Neighborhood') return 'min-w-[160px]';
-                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
+                      if (col === 'Rating' || col === 'Best Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                     return '';
                   };
                 
@@ -1704,7 +1704,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                     {getSortIcon(column)}
                     
                     {/* Bulk edit button for columns with missing values */}
-                    {!['Rating', 'Good Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
+                    {!['Rating', 'Best Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
                         'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(column) && (
                       <button
                         onClick={(e) => {
@@ -1780,7 +1780,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
                       if (col === 'Neighborhood') return 'min-w-[160px]';
-                      if (col === 'Rating' || col === 'Good Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
+                      if (col === 'Rating' || col === 'Best Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                       return '';
                     };
                     

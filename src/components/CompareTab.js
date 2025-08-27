@@ -7,7 +7,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
   const [showPopup, setShowPopup] = useState(false);
   const [comparisonResult, setComparisonResult] = useState(null);
   const [ratingValue, setRatingValue] = useState(0);
-  const [goodCompValue, setGoodCompValue] = useState(null);
+  const [bestCompValue, setBestCompValue] = useState(null);
 
   // Escape key closes popup
   useEffect(() => {
@@ -41,8 +41,8 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
     // Set the rating value based on existing rating
     setRatingValue(comp['Rating'] || 0);
     
-    // Set the good comp value based on existing good comp
-    setGoodCompValue(comp['Good Comp'] === 'YES' ? 'yes' : comp['Good Comp'] === 'NO' ? 'no' : null);
+    // Set the best comp value based on existing best comp
+    setBestCompValue(comp['Best Comp'] === 'YES' ? 'yes' : comp['Best Comp'] === 'NO' ? 'no' : null);
   };
 
   const handleClosePopup = () => {
@@ -50,7 +50,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
     setSelectedComp(null);
     setComparisonResult(null);
     setRatingValue(0);
-    setGoodCompValue(null);
+    setBestCompValue(null);
   };
 
   const handleWorthComparison = (comparisonType) => {
@@ -115,16 +115,16 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
     }
   };
   
-  const handleGoodCompChange = (value) => {
-    setGoodCompValue(value);
+  const handleBestCompChange = (value) => {
+    setBestCompValue(value);
     
-    // Update the data with the new good comp value
+    // Update the data with the new best comp value
     if (selectedComp && onDataUpdate) {
       const updatedComps = comps.map(comp => {
         if (comp['MLS #'] === selectedComp['MLS #']) {
           return {
             ...comp,
-            'Good Comp': value === 'yes' ? 'YES' : 'NO'
+            'Best Comp': value === 'yes' ? 'YES' : 'NO'
           };
         }
         return comp;
@@ -185,7 +185,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
     { key: 'Sq Ft Difference vs EXP', label: 'SQFT DIFFERENCE' },
     { key: 'Lot Difference vs EXP', label: 'LOT SQFT DIFFERENCE' },
     { key: 'Rating', label: 'Rating' },
-    { key: 'Good Comp', label: 'Good Comp' }
+    { key: 'Best Comp', label: 'Best Comp' }
   ];
 
   if (!referenceProperty) {
@@ -456,7 +456,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
                 </div>
               </div>
 
-              {/* Rating and Good Comp */}
+              {/* Rating and Best Comp */}
               <div className="border-t border-gray-200 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   {/* Rating */}
@@ -480,17 +480,17 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
                     </div>
                   </div>
                   
-                  {/* Good Comp */}
+                  {/* Best Comp */}
                   <div>
-                    <h4 className="text-lg font-medium text-gray-900 mb-4">Good Comp</h4>
+                    <h4 className="text-lg font-medium text-gray-900 mb-4">Best Comp</h4>
                     <p className="text-gray-600 mb-4">
-                      Is this a good comparable property for the reference property?
+                      Is this a best comparable property for the reference property?
                     </p>
                     <div className="flex gap-4">
                       <button
-                        onClick={() => handleGoodCompChange('yes')}
+                        onClick={() => handleBestCompChange('yes')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                          goodCompValue === 'yes'
+                          bestCompValue === 'yes'
                             ? 'bg-green-100 text-green-800 border-2 border-green-300'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
@@ -499,9 +499,9 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
                         Yes
                       </button>
                       <button
-                        onClick={() => handleGoodCompChange('no')}
+                        onClick={() => handleBestCompChange('no')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                          goodCompValue === 'no'
+                          bestCompValue === 'no'
                             ? 'bg-red-100 text-red-800 border-2 border-red-300'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}

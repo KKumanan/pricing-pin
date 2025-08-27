@@ -30,7 +30,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
     { key: 'BELOW GRADE SQFT', label: 'BELOW GRADE SQFT', type: 'number' },
     { key: 'SUBDIVISION', label: 'SUBDIVISION', type: 'text' },
     { key: 'LOT SQFT', label: 'LOT SQFT', type: 'number' },
-    { key: 'Good Comp', label: 'Good Comp', type: 'select' },
+    { key: 'Best Comp', label: 'Best Comp', type: 'select' },
     { key: 'Worth Comparison', label: 'Worth Comparison', type: 'select' }
   ];
 
@@ -57,7 +57,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
       'SUBDIVISION': property['SUBDIVISION'] || '',
       'LOT SQFT': property['LOT SQFT'] || '',
       Rating: property.Rating || 0,
-      'Good Comp': property['Good Comp'] || 'NO',
+      'Best Comp': property['Best Comp'] || 'NO',
       'Worth Comparison': property['Worth Comparison'] || 'Not Set',
     });
     setIsEditing(false);
@@ -86,7 +86,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
           ...property,
           ...formData,
           Rating: formData.Rating || 0,
-          'Good Comp': formData['Good Comp'] || 'NO',
+          'Best Comp': formData['Best Comp'] || 'NO',
           'Worth Comparison': formData['Worth Comparison'] || 'Not Set',
         };
       }
@@ -632,15 +632,15 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                     </div>
 
-                    {/* Good Comp, Worth Comparison, and Property Rating row */}
+                    {/* Best Comp, Worth Comparison, and Property Rating row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Good Comp
+                          Best Comp
                         </label>
                         <select
-                          value={formData['Good Comp'] || 'NO'}
-                          onChange={(e) => handleInputChange('Good Comp', e.target.value)}
+                          value={formData['Best Comp'] || 'NO'}
+                          onChange={(e) => handleInputChange('Best Comp', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''

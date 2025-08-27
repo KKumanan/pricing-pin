@@ -319,7 +319,7 @@ const DataTable = ({ data, onExport }) => {
       'GARAGE SPACES': 'GARAGE SPACES',
       'PRIMARY BATHROOM': 'PRIMARY BATHROOM',
       '2 Story Family Room': '2 STORY FAMILY ROOM',
-      'Good Comp': 'GOOD COMP'
+      'Best Comp': 'BEST COMP'
     };
     return displayNames[columnName] || columnName;
   };
