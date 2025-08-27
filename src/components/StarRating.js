@@ -14,7 +14,10 @@ const StarRating = ({ value = 0, onChange, editable = false, size = 22 }) => {
           onClick={() => {
             if (editable && onChange) {
               console.log('Star clicked:', star);
-              onChange(star);
+              // If clicking on the same star that's already selected, return to 0
+              // If clicking on a different star, set to that star's value
+              const newRating = star === value ? 0 : star;
+              onChange(newRating);
             }
           }}
           tabIndex={editable ? 0 : -1}

@@ -912,7 +912,10 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               e.preventDefault();
               e.stopPropagation();
               console.log('Star clicked:', star, 'for row:', rowIndex);
-              onChange(star);
+              // If clicking on the same star that's already selected, return to 0
+              // If clicking on a different star, set to that star's value
+              const newRating = star === value ? 0 : star;
+              onChange(newRating);
             }}
             style={{ background: 'none', border: 'none', padding: '1px' }}
           >
