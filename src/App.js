@@ -129,14 +129,28 @@ function App() {
     exportToCSV(dataToExport, 'processed_real_estate_data.csv');
   };
 
-  const handleColumnStateChange = (columnState) => {
+  const handleColumnStateChange = async (columnState) => {
     console.log('App: Column state changed:', columnState);
     setCurrentColumnState(columnState);
     
-    // If we're working with a loaded session, automatically save column state
+    // If we're working with a loaded session, immediately save column state
     if (currentSessionId) {
-      // Save column state to session (this will be handled in the next auto-save)
-      console.log('App: Column state updated for session:', columnState);
+      try {
+        console.log('App: Immediately saving column state to session:', columnState);
+        await apiService.updateSession(currentSessionId, {
+          name: currentSessionName,
+          description: '', // Keep existing description
+          data: data,
+          stats: stats,
+          starredPropertyId: starredPropertyId,
+          selectedColumns: columnState.selectedColumns,
+          hiddenColumns: columnState.hiddenColumns
+        });
+        console.log('App: Column state immediately saved to session');
+      } catch (err) {
+        console.error('Failed to immediately save column state to session:', err);
+        // Optionally show an error notification to the user
+      }
     }
   };
 
