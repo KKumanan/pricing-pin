@@ -640,7 +640,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const handleHideAllColumns = () => {
-    setHiddenColumns(new Set(allColumns));
+    setHiddenColumns(new Set(defaultColumns));
   };
 
   // Filter handlers
@@ -2022,7 +2022,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {allColumns.map(column => (
+                {defaultColumns.map(column => (
                   <div
                     key={column}
                     className={`flex items-center gap-3 p-3 rounded-lg border ${
@@ -2053,7 +2053,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
             
             <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
               <div className="text-sm text-gray-600">
-                {visibleColumns.length} of {allColumns.length} columns visible
+                {visibleColumns.length} of {defaultColumns.length} columns visible
               </div>
               <button
                 onClick={() => setShowColumnManager(false)}
