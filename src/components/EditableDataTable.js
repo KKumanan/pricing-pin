@@ -1703,21 +1703,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                     {getDisplayName(column)}
                     {getSortIcon(column)}
                     
-                    {/* Bulk edit button for columns with missing values */}
-                    {!['Rating', 'Best Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
-                        'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(column) && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openBulkEditModal(column);
-                        }}
-                        className="ml-2 p-1 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        title={`Bulk edit missing values for ${getDisplayName(column)}`}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    )}
+                    {/* Bulk edit functionality removed - no + button shown */}
                   </div>
                 </th>
                 );
