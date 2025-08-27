@@ -45,12 +45,19 @@ export const processCSVData = (csvText) => {
             // Combine garage spaces
             'Garage Spaces': combineGarageSpaces(row['Attached Garage # of Spaces'], row['Detached Garage # of Spaces']),
             // Add lot size in square feet
-            'Lot sqft': parseLotSize(row['Acres/Lot SF']),
+            'LOT SQFT': parseLotSize(row['Acres/Lot SF']),
             // Add below grade square footage
             'Below Grade sqft': parseNumber(row['Below Grade Finished SQFT']),
             // Add subdivision name
             'Subdivision': row['Subdivision/Neighborhood'] || '',
           }));
+          
+          // Debug: Log the first row to see what fields are created
+          if (processedData.length > 0) {
+            console.log('First row processed data:', processedData[0]);
+            console.log('LOT SQFT value:', processedData[0]['LOT SQFT']);
+            console.log('Available fields:', Object.keys(processedData[0]));
+          }
           resolve(processedData);
         }
       },

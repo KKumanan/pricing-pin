@@ -3,6 +3,63 @@ import { ChevronUp, ChevronDown, Search, Filter, Download, ExternalLink, Save, X
 import { generateZillowLink } from '../utils/csvProcessor';
 
 const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, onStarProperty, onColumnStateChange, initialColumnState }) => {
+  // Add CSS to completely remove borders from the no-border-cell class
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .no-border-cell {
+        border: none !important;
+        border-width: 0 !important;
+        border-top-width: 0px !important;
+        border-right-width: 0px !important;
+        border-bottom-width: 0px !important;
+        border-left-width: 0px !important;
+        border-style: none !important;
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+      }
+      .no-border-cell:hover {
+        border: none !important;
+        border-width: 0 !important;
+        border-top-width: 0px !important;
+        border-right-width: 0px !important;
+        border-bottom-width: 0px !important;
+        border-left-width: 0px !important;
+        border-style: none !important;
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+        background: transparent !important;
+      }
+      .no-border-cell * {
+        border: none !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      .no-border-cell *:hover {
+        border: none !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+        background: transparent !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -876,6 +933,11 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   };
 
   const formatValue = (value, key, rowIndex) => {
+    // Debug: Log the first few fields to see what's being processed
+    if (rowIndex === 0 && (key === 'Lot Difference vs EXP' || key.includes('Difference'))) {
+      console.log('formatValue called for:', { key, value, type: typeof value });
+    }
+    
     // Check if this cell is being edited
     const isEditing = editingCell && editingCell.rowIndex === rowIndex && editingCell.column === key;
     
@@ -1175,7 +1237,76 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    if (key.includes('Difference') && typeof value === 'number') {
+    if (key === 'Lot Difference vs EXP') {
+      console.log('Lot Difference vs EXP field detected:', { key, value, type: typeof value });
+      // Handle all values for Lot Difference vs EXP with no borders
+      if (value === null || value === undefined) {
+        return (
+          <div 
+            className="px-2 py-1 text-gray-900"
+            style={{
+              border: 'none !important',
+              borderWidth: '0 !important',
+              borderTopWidth: '0px !important',
+              borderRightWidth: '0px !important',
+              borderBottomWidth: '0px !important',
+              borderLeftWidth: '0px !important',
+              outline: 'none !important',
+              boxShadow: 'none !important',
+              borderStyle: 'none !important',
+              borderColor: 'transparent !important'
+            }}
+          >
+            {value || ''}
+          </div>
+        );
+      }
+      
+      if (typeof value === 'number') {
+        const formatted = new Intl.NumberFormat('en-US').format(Math.abs(value));
+        return (
+          <div 
+            className="px-2 py-1 text-gray-900"
+            style={{
+              border: 'none !important',
+              borderWidth: '0 !important',
+              borderTopWidth: '0px !important',
+              borderRightWidth: '0px !important',
+              borderBottomWidth: '0px !important',
+              borderLeftWidth: '0px !important',
+              outline: 'none !important',
+              boxShadow: 'none !important',
+              borderStyle: 'none !important',
+              borderColor: 'transparent !important'
+            }}
+          >
+            {value >= 0 ? `+${formatted}` : `-${formatted}`}
+          </div>
+        );
+      }
+      
+      return (
+        <div 
+          className="px-2 py-1 text-gray-900"
+          style={{
+            border: 'none !important',
+            borderWidth: '0 !important',
+            borderTopWidth: '0px !important',
+            borderRightWidth: '0px !important',
+            borderBottomWidth: '0px !important',
+            borderLeftWidth: '0px !important',
+            outline: 'none !important',
+            boxShadow: 'none !important',
+            borderStyle: 'none !important',
+            borderColor: 'transparent !important'
+          }}
+        >
+          {value}
+        </div>
+      );
+    }
+    
+    if (key.includes('Difference') && key !== 'Lot Difference vs EXP' && typeof value === 'number') {
       const formatted = new Intl.NumberFormat('en-US').format(Math.abs(value));
       return value >= 0 ? `+${formatted}` : `-${formatted}`;
     }
@@ -1375,9 +1506,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       );
     }
     
-    // For editable fields, make them clickable (all fields except special ones and calculated fields)
-          if (!['Rating', 'Best Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP', 
-           'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(key)) {
+          // For editable fields, make them clickable (all fields except special ones and calculated fields)
+           if (!['Rating', 'Best Comp', 'Worth Comparison', 'Status', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
+            'Price vs EXP', 'Price vs EXP %', 'Is Reference Property', 'Price/SqFt'].includes(key)) {
       // Don't make Address clickable since it has its own special handling with the Zillow link button
       if (key === 'Address') {
         return value || '';
@@ -1773,9 +1904,23 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                     return (
                   <td 
                     key={column} 
-                        className={`table-cell ${getColumnWidth(column)} ${
+                        className={`${column === 'Lot Difference vs EXP' ? 'no-border-cell' : 'table-cell'} ${getColumnWidth(column)} ${
                           column === 'Rating' ? 'relative pointer-events-auto' : ''
                     }`}
+                        style={column === 'Lot Difference vs EXP' ? {
+                          border: 'none !important',
+                          borderWidth: '0 !important',
+                          borderTopWidth: '0px !important',
+                          borderRightWidth: '0px !important',
+                          borderBottomWidth: '0px !important',
+                          borderLeftWidth: '0px !important',
+                          outline: 'none !important',
+                          boxShadow: 'none !important',
+                          borderStyle: 'none !important',
+                          borderColor: 'transparent !important',
+                          borderCollapse: 'collapse !important',
+                          borderSpacing: '0 !important'
+                        } : {}}
                         onClick={(e) => {
                           if (column === 'Rating') {
                             e.stopPropagation();
