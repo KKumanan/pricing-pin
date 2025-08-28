@@ -290,7 +290,7 @@ const CompareTab = ({ comps = [], referenceProperty, onDataUpdate, starredProper
                 </div>
                 <div>
                   <span className="text-gray-500">Subdivision:</span>
-                  <p className="font-medium text-gray-900">{comp['SUBDIVISION'] || '-'}</p>
+                  <p className="font-medium text-gray-900">{comp['Subdivision'] || '-'}</p>
                 </div>
                 <div>
                   <span className="text-gray-500">Rating:</span>

@@ -112,7 +112,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'Above Grade Finished SQFT', 'Price/SqFt', 'LOT SQFT', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
     'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Neighborhood',
+    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Subdivision',
     'Rating', 'Best Comp'
   ];
   
@@ -318,7 +318,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
         'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
         'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
-        'Neighborhood': row['SUBDIVISION'] === undefined || row['SUBDIVISION'] === null ? '' : row['SUBDIVISION'],
+        'Subdivision': row['Subdivision'] === undefined || row['Subdivision'] === null ? '' : row['Subdivision'],
         'LOT SQFT': row['LOT SQFT'] === undefined || row['LOT SQFT'] === null ? '' : row['LOT SQFT']
       };
     });
@@ -1585,9 +1585,10 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       'Status Contractual': 'Status Contractual',
       'GARAGE SPACES': 'Garage Spaces',
       'PRIMARY BATHROOM': 'Primary Bathroom',
-      '2 Story Family Room': '2 Story Family Room',
-      'Best Comp': 'Best Comp',
-      'Subdivision/Neighborhood': 'Neighborhood'
+              '2 Story Family Room': '2 Story Family Room',
+        'Best Comp': 'Best Comp',
+        'Subdivision/Neighborhood': 'Subdivision',
+        'Subdivision': 'Subdivision'
     };
     return displayNames[columnName] || columnName;
   };
@@ -1810,7 +1811,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'Condition') return 'min-w-[100px]';
                                           if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
-                      if (col === 'Neighborhood') return 'min-w-[160px]';
+                      if (col === 'Subdivision') return 'min-w-[160px]';
                       if (col === 'Rating' || col === 'Best Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                     return '';
                   };
@@ -1899,7 +1900,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'Condition') return 'min-w-[100px]';
                       if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
-                      if (col === 'Neighborhood') return 'min-w-[160px]';
+                      if (col === 'Subdivision') return 'min-w-[160px]';
                       if (col === 'Rating' || col === 'Best Comp' || col === 'Worth Comparison') return 'min-w-[100px]';
                       return '';
                     };

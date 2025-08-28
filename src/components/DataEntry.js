@@ -28,7 +28,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
     { key: 'Condition', label: 'Condition', type: 'text' },
     { key: 'GARAGE SPACES', label: 'Garage Spaces', type: 'number' },
     { key: 'BELOW GRADE SQFT', label: 'BELOW GRADE SQFT', type: 'number' },
-    { key: 'SUBDIVISION', label: 'SUBDIVISION', type: 'text' },
+    { key: 'Subdivision', label: 'Subdivision', type: 'text' },
     { key: 'LOT SQFT', label: 'LOT SQFT', type: 'number' },
     { key: 'Best Comp', label: 'Best Comp', type: 'select' },
     { key: 'Worth Comparison', label: 'Worth Comparison', type: 'select' }
@@ -54,7 +54,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
       'Condition': property['Condition'] || '',
       'GARAGE SPACES': property['GARAGE SPACES'] || '',
       'BELOW GRADE SQFT': property['BELOW GRADE SQFT'] || '',
-      'SUBDIVISION': property['SUBDIVISION'] || '',
+      'Subdivision': property['Subdivision'] || '',
       'LOT SQFT': property['LOT SQFT'] || '',
       Rating: property.Rating || 0,
       'Best Comp': property['Best Comp'] || 'NO',
@@ -602,12 +602,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          SUBDIVISION
+                          Subdivision
                         </label>
                         <input
                           type="text"
-                          value={formData['SUBDIVISION'] || ''}
-                          onChange={(e) => handleInputChange('SUBDIVISION', e.target.value)}
+                          value={formData['Subdivision'] || ''}
+                          onChange={(e) => handleInputChange('Subdivision', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
