@@ -318,7 +318,7 @@ const DataTable = ({ data, onExport }) => {
       'Status Contractual': 'STATUS CONTRACTUAL',
       'GARAGE SPACES': 'GARAGE SPACES',
       'PRIMARY BATHROOM': 'PRIMARY BATHROOM',
-      '2 Story Family Room': '2 STORY FAMILY ROOM',
+      'Remarks': 'REMARKS',
       'Best Comp': 'BEST COMP'
     };
     return displayNames[columnName] || columnName;
