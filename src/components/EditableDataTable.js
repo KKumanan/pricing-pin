@@ -112,7 +112,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
     'Above Grade Finished SQFT', 'Price/SqFt', 'LOT SQFT', 'Sq Ft Difference vs EXP', 'Lot Difference vs EXP',
     'Beds', 'Baths', 'Year Built', 'DOM', 'Status Contractual', 'Long Text', 'Upgrades', 
     'Parking', 'Upper Level Bedrooms', 'Upper Level Full Baths', 'Main Level Bedrooms', 'Main Level Full Baths', 'Lower Level Bedrooms', 'Lower Level Full Baths',
-    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', '2 Story Family Room', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Subdivision',
+    'KITCHEN', 'EXTERIOR', 'PRIMARY BATHROOM', 'Remarks', 'Condition', 'GARAGE SPACES', 'BELOW GRADE SQFT', 'Subdivision',
     'Rating', 'Best Comp'
   ];
   
@@ -314,7 +314,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
         'KITCHEN': row['KITCHEN'] === undefined || row['KITCHEN'] === null ? '' : row['KITCHEN'],
         'EXTERIOR': row['EXTERIOR'] === undefined || row['EXTERIOR'] === null ? '' : row['EXTERIOR'],
         'PRIMARY BATHROOM': row['PRIMARY BATHROOM'] === undefined || row['PRIMARY BATHROOM'] === null ? '' : row['PRIMARY BATHROOM'],
-        '2 Story Family Room': row['2 Story Family Room'] === undefined || row['2 Story Family Room'] === null ? '' : row['2 Story Family Room'],
+        'Remarks': row['Remarks'] === undefined || row['Remarks'] === null ? '' : row['Remarks'],
         'Condition': row['Condition'] === undefined || row['Condition'] === null ? '' : row['Condition'],
         'GARAGE SPACES': row['GARAGE SPACES'] === undefined || row['GARAGE SPACES'] === null ? '' : row['GARAGE SPACES'],
         'BELOW GRADE SQFT': row['BELOW GRADE SQFT'] === undefined || row['BELOW GRADE SQFT'] === null ? '' : row['BELOW GRADE SQFT'],
@@ -1585,7 +1585,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
       'Status Contractual': 'Status Contractual',
       'GARAGE SPACES': 'Garage Spaces',
       'PRIMARY BATHROOM': 'Primary Bathroom',
-              '2 Story Family Room': '2 Story Family Room',
+              'Remarks': 'Remarks',
         'Best Comp': 'Best Comp',
         'Subdivision/Neighborhood': 'Subdivision',
         'Subdivision': 'Subdivision'
@@ -1807,7 +1807,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                     if (col === 'Upgrades') return 'min-w-[180px]';
                                           if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[130px]';
                       if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[130px]';
-                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === '2 Story Family Room') return 'min-w-[120px]';
+                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === 'Remarks') return 'min-w-[120px]';
                       if (col === 'Condition') return 'min-w-[100px]';
                                           if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
@@ -1896,7 +1896,7 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                       if (col === 'Upgrades') return 'min-w-[180px]';
                       if (col === 'Upper Level Bedrooms' || col === 'Upper Level Full Baths' || col === 'Main Level Bedrooms' || col === 'Main Level Full Baths') return 'min-w-[130px]';
                       if (col === 'Lower Level Bedrooms' || col === 'Lower Level Full Baths') return 'min-w-[130px]';
-                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === '2 Story Family Room') return 'min-w-[120px]';
+                      if (col === 'KITCHEN' || col === 'EXTERIOR' || col === 'PRIMARY BATHROOM' || col === 'Remarks') return 'min-w-[120px]';
                       if (col === 'Condition') return 'min-w-[100px]';
                       if (col === 'GARAGE SPACES') return 'min-w-[140px]';
                       if (col === 'BELOW GRADE SQFT') return 'min-w-[140px]';
