@@ -90,6 +90,9 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(1);
   const [rowsToDelete, setRowsToDelete] = useState([]);
+
+  // Row highlighting state
+  const [hoveredRow, setHoveredRow] = useState(null);
   
   // Column management state
   const [showColumnManager, setShowColumnManager] = useState(false);
@@ -1848,17 +1851,43 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedData.map((row, rowIndex) => {
               const isStarredProperty = starredPropertyId === row['MLS #'];
+              const isEditingRow = editingCell && editingCell.rowIndex === rowIndex;
+              const isHoveredRow = hoveredRow === rowIndex;
+              
               if (rowIndex === 0) {
                 console.log('EditableDataTable starredPropertyId:', starredPropertyId, 'isStarredProperty for first row:', isStarredProperty);
               }
+              
+              // Determine row background classes based on state
+              let rowClasses = 'table-row';
+              if (isStarredProperty) {
+                // Starred property gets yellow background with darker variants for editing/hover
+                if (isEditingRow || isHoveredRow) {
+                  rowClasses += ' bg-yellow-100 border-l-4 border-l-yellow-500';
+                } else {
+                  rowClasses += ' bg-yellow-50 border-l-4 border-l-yellow-500 hover:bg-yellow-100';
+                }
+              } else {
+                // Regular rows get grey backgrounds with darker variants for editing/hover
+                if (isEditingRow && isHoveredRow) {
+                  // Both editing and hovering - darkest grey
+                  rowClasses += ' bg-gray-300';
+                } else if (isEditingRow || isHoveredRow) {
+                  // Either editing or hovering - darker grey
+                  rowClasses += ' bg-gray-200';
+                } else {
+                  // Default state - light hover
+                  rowClasses += ' hover:bg-gray-50';
+                }
+              }
+              
               return (
                 <tr 
-                  key={rowIndex} 
-                  className={`table-row ${
-                    isStarredProperty 
-                      ? 'bg-yellow-50 border-l-4 border-l-yellow-500 hover:bg-yellow-100' 
-                      : 'hover:bg-gray-50'
-                  }`}
+                  key={rowIndex}
+                  className={rowClasses}
+                  onMouseEnter={() => setHoveredRow(rowIndex)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                >
                 >
                   {/* Star cell for reference property */}
                   <td className="table-cell w-12 px-4 py-3">
