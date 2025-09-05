@@ -24,7 +24,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
     { key: 'KITCHEN', label: 'KITCHEN', type: 'text' },
     { key: 'EXTERIOR', label: 'EXTERIOR', type: 'text' },
     { key: 'PRIMARY BATHROOM', label: 'PRIMARY BATHROOM', type: 'text' },
-    { key: '2 Story Family Room', label: '2 Story Family Room?', type: 'text' },
+    { key: 'Remarks', label: 'Remarks', type: 'text' },
     { key: 'Condition', label: 'Condition', type: 'text' },
     { key: 'GARAGE SPACES', label: 'Garage Spaces', type: 'number' },
     { key: 'BELOW GRADE SQFT', label: 'BELOW GRADE SQFT', type: 'number' },
@@ -50,7 +50,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
       'KITCHEN': property['KITCHEN'] || '',
       'EXTERIOR': property['EXTERIOR'] || '',
       'PRIMARY BATHROOM': property['PRIMARY BATHROOM'] || '',
-      '2 Story Family Room': property['2 Story Family Room'] || '',
+      'Remarks': property['Remarks'] || '',
       'Condition': property['Condition'] || '',
       'GARAGE SPACES': property['GARAGE SPACES'] || '',
       'BELOW GRADE SQFT': property['BELOW GRADE SQFT'] || '',
@@ -459,7 +459,7 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                     </div>
 
-                    {/* Third row - Lower Level Bedrooms, Lower Level Full Baths, KITCHEN, EXTERIOR, PRIMARY BATHROOM, 2 Story Family Room */}
+                    {/* Third row - Lower Level Bedrooms, Lower Level Full Baths, KITCHEN, EXTERIOR, PRIMARY BATHROOM, Remarks */}
                     <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -538,12 +538,12 @@ const DataEntry = ({ data, onDataUpdate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          2 Story Family Room?
+                          Remarks
                         </label>
                         <input
                           type="text"
-                          value={formData['2 Story Family Room'] || ''}
-                          onChange={(e) => handleInputChange('2 Story Family Room', e.target.value)}
+                          value={formData['Remarks'] || ''}
+                          onChange={(e) => handleInputChange('Remarks', e.target.value)}
                           disabled={!isEditing}
                           className={`input-field disabled:bg-gray-100 disabled:cursor-not-allowed ${
                             !isEditing ? 'border-gray-300 border-dashed' : ''
@@ -744,4 +744,4 @@ const DataEntry = ({ data, onDataUpdate }) => {
   );
 };
 
-export default DataEntry; 
+export default DataEntry;

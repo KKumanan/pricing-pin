@@ -84,7 +84,7 @@
   }
   
   .table-row {
-    @apply hover:bg-gray-50 transition-colors duration-150;
+    @apply transition-colors duration-150;
   }
   
   /* Horizontal scroll navigation styles */
@@ -112,4 +112,4 @@
   .floating-scroll-button:not(:disabled):hover {
     @apply shadow-sm transform scale-105;
   }
-} 
+}
