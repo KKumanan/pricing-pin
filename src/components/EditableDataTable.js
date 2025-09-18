@@ -1888,7 +1888,6 @@ const EditableDataTable = ({ data, onExport, onDataUpdate, starredPropertyId, on
                   onMouseEnter={() => setHoveredRow(rowIndex)}
                   onMouseLeave={() => setHoveredRow(null)}
                 >
-                >
                   {/* Star cell for reference property */}
                   <td className="table-cell w-12 px-4 py-3">
                     <div className="flex items-center justify-center">
